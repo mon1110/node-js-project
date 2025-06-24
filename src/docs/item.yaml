@@ -1,0 +1,237 @@
+openapi: 3.0.0
+info:
+  title: User API
+  version: 1.0.0
+  description: API for managing users, Excel, and PDF files
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []
+
+paths:
+  /users:
+    get:
+      summary: Fetch all users
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A list of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 30
+                    name:
+                      type: string
+                      example: axita
+                    email:
+                      type: string
+                      example: axita2605@gmail.com
+                    gender:
+                      type: string
+                      enum: [Male, Female, Other]
+                      example: Female
+
+  /users/register:
+    post:
+      summary: Add new users
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - password
+                - gender
+              properties:
+                username:
+                  type: string
+                  default: johndoe
+                email:
+                  type: string
+                  default: johndoe@mail.com
+                password:
+                  type: string
+                  default: johnDoe20!@
+                gender:
+                  type: string
+                  default: FEMALE
+      responses:
+        '200':
+          description: User created successfully
+
+  /users/{id}:
+    put:
+      summary: Modify a user
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+      responses:
+        200:
+          description: User updated
+
+  /users/delete/{id}:
+    delete:
+      summary: Delete user by Id
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: User deleted
+
+  /excel/export-users:
+    get:
+      summary: Export user data as Excel
+      tags: [Excel]
+      responses:
+        '200':
+          description: Excel downloaded
+
+  /excel/write-users-excel:
+    post:
+      summary: Write data to Excel file
+      tags: [Excel]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  email:
+                    type: string
+      responses:
+        '200':
+          description: Excel file saved
+
+  /excel/upload-popup:
+    post:
+      summary: Upload Excel and inject popup
+      tags: [Excel]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Popup injected in Excel
+
+  /pdf/generate:
+    get:
+      summary: Generate a PDF file
+      tags: [PDF]
+      responses:
+        '200':
+          description: PDF file generated
+
+  /pdf/read:
+    get:
+      summary: Read and return existing PDF
+      tags: [PDF]
+      responses:
+        '200':
+          description: PDF streamed
+
+  /pdf/users:
+    post:
+      summary: Extract users from uploaded PDF
+      tags: [PDF]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Users extracted from PDF
+
+  /users/registeraaa:
+    post:
+      summary: Register a user and send mail using RabbitMQ
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - gender
+              properties:
+                name:
+                  type: string
+                  example: Monika
+                email:
+                  type: string
+                  example: monika@example.com
+                gender:
+                  type: string
+                  enum: [MALE, FEMALE]
+                  example: FEMALE
+      responses:
+        '200':
+          description: User registered and mail queued successfully
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error

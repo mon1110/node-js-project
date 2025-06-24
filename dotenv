@@ -1,0 +1,27 @@
+
+// require('dotenv').config();
+// const nodemailer = require('nodemailer');
+
+// const transporter = nodemailer.createTransport({
+//   host: process.env.EMAIL_HOST,
+//   port: process.env.EMAIL_PORT,
+//   secure: false, 
+//   auth: process.env.EMAIL_USER && process.env.EMAIL_PASS ? {
+//     user: process.env.EMAIL_USER,
+//     pass: process.env.EMAIL_PASS
+//   } : undefined
+// });
+
+// const mailOptions = {
+//   from: 'srushtikapadiya4@gmail.com',
+//   to: process.env.EMAIL_TO,
+//   subject: 'Test Email from Localhost',
+//   text: 'This email was sent from a Node.js app using a local SMTP server.',
+// };
+
+// transporter.sendMail(mailOptions, (err, info) => {
+//   if (err) {
+//     return console.error('Error:', err);
+//   }
+//   console.log('Email sent:', info.response);
+// });
