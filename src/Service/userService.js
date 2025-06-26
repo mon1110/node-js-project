@@ -6,36 +6,44 @@ const jwt = require('jsonwebtoken');
 const SECRET_KEY = 'your-secret-key'; 
 const bcrypt = require('bcrypt');
 const { BadRequestException } = require('../utils/errors');
+const getTemplate = require('../utils/mailtemplate'); 
+const { sendToMailQueue } = require('../Service/rmqService');
 
 // const {BadRequestException, NotFoundException,} = require("../utils/errors");
 //const MessageConstant = require("../constants/MessageConstant");
 
 const createUser = async (data) => {
-  const { name, email, menuIds , password, gender } = data;
+  const { name, email, menuIds, password, gender } = data;
 
   if (!name || !email || !menuIds || !password || !gender) {
     throw new BadRequestException(MessageConstant.USER.ALL_FIELDS_REQUIRED);
   }
 
-  const existingUser = await userRepo.findByEmail(email);
-  console.log(email);
+  const existingUser = await userRepo.findByEmail(email.toLowerCase());
   if (existingUser) {
     throw new BadRequestException(MessageConstant.USER.EMAIL_EXISTS);
   }
-  const hashedPassword = await bcrypt.hash(password, 10); // ✅ HASH the password
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
   const newUser = await userRepo.createUser({
-    name: name,
+    name,
     email: email.toLowerCase(),
     menuIds,
     password: hashedPassword,
     gender
   });
-    // Send welcome email
-    const subject = "Welcome to Our App!";
-    const html = `<h1>Hello ${name},</h1><p>Thank you for registering!</p>`;
-    await sendEmail(email, subject, html);
-  
-    return newUser;
+
+  // Send welcome email using queue
+  const mailPayload = {
+    to: email,
+    subject: 'Welcome to Our App!',
+    html: getTemplate(name) // centralized template
+  };
+
+  await sendToMailQueue(mailPayload);
+
+  return newUser;
 };
 
 const login = async (data) => {
@@ -190,6 +198,24 @@ const fetchAllUsers = async () => {
   }
 };
 
+const sendWelcomeMailsToAllUsers = async () => {
+  const users = await userRepo.getAllUsers(); // 🔄 fetch from DB
+
+  for (const user of users) {
+    const { name, email } = user;
+
+    if (!name || !email) continue;
+
+    const mailPayload = {
+      to: email,
+      subject: 'Welcome!',
+      html: getTemplate(name)
+    };
+
+    await sendToMailQueue(mailPayload);
+  }
+};
+
 module.exports = {
   createUser,
   getAllUsers,
@@ -209,5 +235,6 @@ module.exports = {
   fetchAllUsers,
   login,
   updatePassword,
-  findByEmail
+  findByEmail,
+  sendWelcomeMailsToAllUsers
 };

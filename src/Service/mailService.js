@@ -1,21 +1,26 @@
 const nodemailer = require('nodemailer');
+const { getEnv } = require('../utils/envHelper');
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS
-  }
-});
+const sendMail = async ({ to, name, subject, html }) => {
+  const emailUser = getEnv('EMAIL_USER'); 
+  const mailSubject = subject || 'No Subject'; 
 
-const sendMail = async ({ to, subject, html }) => {
-  await transporter.sendMail({
-    from: process.env.MAIL_USER,
-    to,
-    subject,
-    html
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: emailUser,
+      pass: getEnv('EMAIL_PASS')
+    }
   });
-  console.log(`📨 Mail sent to ${to}`);
+
+   //const finalHtml = html || `<h1>Hello ${name || 'User'},</h1><p>Welcome to our platform!</p>`;
+
+  await transporter.sendMail({
+    from: `"TechRover Team" <${emailUser}>`,
+    to,
+    subject: mailSubject,
+    html: finalHtml
+  });
 };
 
 module.exports = { sendMail };

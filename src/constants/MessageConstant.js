@@ -13,6 +13,17 @@ module.exports = {
     ALL_FIELDS_REQUIRED: "All fields are required",
     CREATE_FAILED: "Failed to create user",
     FETCH_FAILED: "Failed to fetch users",
+    IDS_FETCH_SUCCESS: "Users fetched by IDs successfully",
+    EMAIL_START_SUCCESS: "Users fetched by email prefix successfully",
+    ASSIGN_MENUS_SUCCESS: "Menus assigned to user successfully",
+    PAGINATION_SUCCESS: "Users fetched with pagination successfully",
+    JOIN_FETCH_SUCCESS: "Users with menus fetched successfully",
+    UPSERT_SUCCESS: "User upserted successfully",
+    BULK_SAVE_SUCCESS: "Users saved in bulk successfully",
+    FETCH_ALL_SUCCESS: "All users fetched successfully",
+    EMAIL_FOUND: "User found by email",
+    PASSWORD_UPDATE_SUCCESS: "Password updated successfully",
+    LOGIN_SUCCESS: "Login successful"
   },
 
   AUTH: {

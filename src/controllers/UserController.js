@@ -1,71 +1,54 @@
 // controllers/userController.js
 const userService = require('../Service/userService');
-const  User  = require('../models');
+const User = require('../models');
 const menu = require('../models/menu');
-const ApiResponse = require('../utils/ApiResponse');
 const MessageConstant = require("../constants/MessageConstant");
 const { BadRequestException } = require('../utils/errors');
-const { sendToMailQueue } = require('../producers/mailProducer');
-const getTemplate = require('../utils/mailTemplate');
-
+const {getTemplate} = require('../utils/mailTemplate');
+const { sendToMailQueue } = require('../Service/rmqService');
+const Res = require('../utils/Res');
 
 const createUser = async (req, res, next) => {
   try {
     const user = await userService.createUser(req.body);
     const { password: _, ...userWithoutPassword } = user.toJSON();
-    
-    return res.status(201).json(
-      ApiResponse.success(userWithoutPassword, MessageConstant.USER.CREATE_SUCCESS, 201)
-    );
-  } catch (error) {
-    next(error); 
-  }
-};
-
-//nodemailer ke liye
-const getAllUsers = async (req, res, next) => {
-  try {
-    const users = await userService.getAllUsers();
-    
-    return res.status(200).json(
-      ApiResponse.success(users, MessageConstant.USER.FETCH_SUCCESS, 200)
-    );
+    return Res.success(res, userWithoutPassword, MessageConstant.USER.CREATE_SUCCESS, 201);
   } catch (error) {
     next(error);
   }
 };
 
-
-//custom error ke liye ye use hoga
+const getAllUsers = async (req, res, next) => {
+  try {
+    const users = await userService.getAllUsers();
+    return Res.success(res, users, MessageConstant.USER.FETCH_SUCCESS);
+  } catch (error) {
+    next(error);
+  }
+};
 
 const getUserById = async (req, res, next) => {
   try {
     const user = await userService.getUserById(req.params.id);
-    return res.status(200).json(
-      ApiResponse.success(user, MessageConstant. NOT_FOUND) 
-    );
+    return Res.success(res, user, MessageConstant.USER.FETCH_SUCCESS);
   } catch (error) {
     next(error);
   }
 };
 
-//login ke liye
 const login = async (req, res, next) => {
   try {
     const userData = await userService.login(req.body);
-    res.status(200).json(ApiResponse.success(userData, MessageConstant.USER.LOGIN_SUCCESS));
+    return Res.success(res, userData, MessageConstant.USER.LOGIN_SUCCESS);
   } catch (err) {
-    console.log(err)
     next(err);
   }
 };
 
-
-//update password
 const updateUserPassword = async (req, res, next) => {
   try {
     await userService.updatePassword(req);
-    return res.status(200).json(ApiResponse.success(null, MessageConstant.USER.PASSWORD_UPDATE_SUCCESS));
+    return Res.success(res, null, MessageConstant.USER.PASSWORD_UPDATE_SUCCESS);
   } catch (error) {
     next(error);
   }
@@ -77,21 +60,20 @@ const updateUser = async (req, res, next) => {
     const userIdFromParams = req.params.id;
 
     if (parseInt(userIdFromToken) !== parseInt(userIdFromParams)) {
-      return res.status(403).json(ApiResponse.error("You can only update your own account", 403));
+      return Res.error(res, "You can only update your own account", 403);
     }
 
     const updated = await userService.updateUser(userIdFromParams, req.body);
-    res.status(200).json(ApiResponse.success(updated, MessageConstant.USER.UPDATE_SUCCESS));
+    return Res.success(res, updated, MessageConstant.USER.UPDATE_SUCCESS);
   } catch (error) {
     next(error);
   }
 };
 
-
 const findByEmail = async (req, res, next) => {
   try {
     const data = await userService.findByEmail(req.body);
-    return res.status(200).json(ApiResponse.success(data, MessageConstant.USER.EMAIL_FOUND));
+    return Res.success(res, data, MessageConstant.USER.EMAIL_FOUND);
   } catch (error) {
     next(error);
   }
@@ -101,9 +83,9 @@ const deleteUser = async (req, res, next) => {
   try {
     const deleted = await userService.deleteUser(req.params.id);
     if (deleted) {
-      return res.status(200).json(ApiResponse.success(null, MessageConstant.USER.DELETE_SUCCESS));
+      return Res.success(res, null, MessageConstant.USER.DELETE_SUCCESS);
     } else {
-      return res.status(404).json(ApiResponse.error(MessageConstant.USER.NOT_FOUND));
+      return Res.error(res, MessageConstant.USER.NOT_FOUND, 404);
     }
   } catch (error) {
     next(error);
@@ -113,7 +95,7 @@ const deleteUser = async (req, res, next) => {
 const getUsersByEmailLetter = async (req, res, next) => {
   try {
     const users = await userService.getUsersByEmailStart(req.body);
-    return res.status(200).json(ApiResponse.success(users, MessageConstant.USER.EMAIL_START_SUCCESS));
+    return Res.success(res, users, MessageConstant.USER.EMAIL_START_SUCCESS);
   } catch (error) {
     next(error);
   }
@@ -123,11 +105,11 @@ const getUsersByIds = async (req, res, next) => {
   try {
     const { ids } = req.body;
     if (!Array.isArray(ids)) {
-      return res.status(400).json(ApiResponse.error(MessageConstant.USER.VALIDATION_FAILED, "ids must be an array"));
+      return Res.error(res, "ids must be an array", 400);
     }
 
     const users = await userService.getUsersByIds(ids);
-    return res.status(200).json(ApiResponse.success(users, MessageConstant.USER.IDS_FETCH_SUCCESS));
+    return Res.success(res, MessageConstant.USER.IDS_FETCH_SUCCESS, users);
   } catch (error) {
     next(error);
   }
@@ -136,8 +118,8 @@ const getUsersByIds = async (req, res, next) => {
 const assignMenusToUser = async (req, res, next) => {
   try {
     const { userId, menuIds } = req.body;
-    const message = await userService.assignMenusToUser(userId, menuIds);
-    return res.status(200).json(ApiResponse.success(null, MessageConstant.USER.ASSIGN_MENUS_SUCCESS));
+    await userService.assignMenusToUser(userId, menuIds);
+    return Res.success(res, null, MessageConstant.USER.ASSIGN_MENUS_SUCCESS);
   } catch (error) {
     next(error);
   }
@@ -146,7 +128,7 @@ const assignMenusToUser = async (req, res, next) => {
 const paginateUsersWithMenus = async (req, res, next) => {
   try {
     const result = await userService.paginateUsersWithMenus(req.body);
-    return res.status(200).json(ApiResponse.success(result, MessageConstant.USER.PAGINATION_SUCCESS));
+    return Res.success(res, result, MessageConstant.USER.PAGINATION_SUCCESS);
   } catch (error) {
     next(error);
   }
@@ -155,7 +137,7 @@ const paginateUsersWithMenus = async (req, res, next) => {
 const getUsersWithmenu = async (req, res, next) => {
   try {
     const result = await userService.getUsersWithmenu(req.body);
-    return res.status(200).json(ApiResponse.success(result, MessageConstant.USER.JOIN_FETCH_SUCCESS));
+    return Res.success(res, result, MessageConstant.USER.JOIN_FETCH_SUCCESS);
   } catch (error) {
     next(error);
   }
@@ -171,7 +153,7 @@ const getUsers = async (req, res, next) => {
       currentPage: result.currentPage,
       pageLimit: result.pageLimit,
     };
-    return res.status(200).json(ApiResponse.success(data, MessageConstant.USER.PAGINATION_SUCCESS));
+    return Res.success(res, data, MessageConstant.USER.PAGINATION_SUCCESS);
   } catch (error) {
     next(error);
   }
@@ -181,7 +163,7 @@ const upsertUser = async (req, res, next) => {
   try {
     const { user, created } = await userService.upsertUser(req.body);
     const message = created ? MessageConstant.USER.CREATE_SUCCESS : MessageConstant.USER.UPSERT_SUCCESS;
-    return res.status(200).json(ApiResponse.success(user, message));
+    return Res.success(res, user, message);
   } catch (error) {
     next(error);
   }
@@ -190,12 +172,12 @@ const upsertUser = async (req, res, next) => {
 const bulkSaveUsers = async (req, res, next) => {
   try {
     if (!req.body || (Array.isArray(req.body) && req.body.length === 0)) {
-      return res.status(400).json(ApiResponse.error(MessageConstant.USER.VALIDATION_FAILED, "Request body cannot be empty"));
+      return Res.error(res, "Request body cannot be empty", 400);
     }
 
     const users = Array.isArray(req.body) ? req.body : [req.body];
     const data = await userService.bulkSaveUsers(users);
-    return res.status(200).json(ApiResponse.success(data, MessageConstant.USER.BULK_SAVE_SUCCESS));
+    return Res.success(res, data, MessageConstant.USER.BULK_SAVE_SUCCESS);
   } catch (error) {
     next(error);
   }
@@ -204,7 +186,7 @@ const bulkSaveUsers = async (req, res, next) => {
 const saveUser = async (req, res, next) => {
   try {
     const data = await userService.saveUser(req.body);
-    return res.status(200).json(ApiResponse.success(data, MessageConstant.USER.UPSERT_SUCCESS));
+    return Res.success(res, data, MessageConstant.USER.UPSERT_SUCCESS);
   } catch (error) {
     next(error);
   }
@@ -213,28 +195,20 @@ const saveUser = async (req, res, next) => {
 const fetchAllUsers = async (req, res, next) => {
   try {
     const users = await userService.fetchAllUsers();
-    return res.status(200).json(ApiResponse.success(users, MessageConstant.USER.FETCH_ALL_SUCCESS));
+    return Res.success(res, users, MessageConstant.USER.FETCH_ALL_SUCCESS);
   } catch (error) {
     next(error);
   }
 };
 
-const registerUser = async (req, res) => {
-  const { name, email } = req.body;
-
-  // Simulate DB save
-  console.log(`📝 User created: ${name} - ${email}`);
-
-  // Send email to queue
-  await sendToMailQueue({
-    to: email,
-    subject: 'Welcome!',
-    html: getTemplate(name)
-  });
-
-  res.status(201).json({ message: 'User registered, mail queued' });
+const registerUser = async (req, res, next) => {
+  try {
+    await userService.sendWelcomeMailsToAllUsers();
+    return Res.noContent(res);
+  } catch (error) {
+    next(error);
+  }
 };
-
 
 module.exports = {
   createUser,

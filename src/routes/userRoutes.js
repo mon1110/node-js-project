@@ -60,7 +60,8 @@ router.post('/users/bulk', userController.bulkSaveUsers);
 //single api
 router.post("/save", userController.saveUser);
 
-router.post('/registeraaa', registerUser);
+//RMQ ke liye
+router.post('/registeraaa', userController.registerUser); 
 
 
 //swagger
