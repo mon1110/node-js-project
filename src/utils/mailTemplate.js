@@ -1,5 +1,5 @@
 const getTemplate = (name) => {
-  return `<h1>Hello ${name},</h1><p>Welcome to our platform!</p>`;
+  return `Hello ${name},Welcome to our platform!`;
 };
 
 module.exports = getTemplate;

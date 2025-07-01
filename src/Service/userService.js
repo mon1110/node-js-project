@@ -199,7 +199,7 @@ const fetchAllUsers = async () => {
 };
 
 const sendWelcomeMailsToAllUsers = async () => {
-  const users = await userRepo.getAllUsers(); // 🔄 fetch from DB
+  const users = await userRepo.getAllUsers(); 
 
   for (const user of users) {
     const { name, email } = user;
@@ -208,11 +208,15 @@ const sendWelcomeMailsToAllUsers = async () => {
 
     const mailPayload = {
       to: email,
+      name,
       subject: 'Welcome!',
-      html: getTemplate(name)
+      html: getTemplate(user.name) 
     };
+    console.log('Payload being sent to queue:', mailPayload);
 
     await sendToMailQueue(mailPayload);
+    // console.log('Mail queued:', email, '-', name); 
+
   }
 };
 

@@ -61,7 +61,7 @@ const startServer = async () => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📘 Swagger docs at http://localhost:${PORT}/api-docs`);
+  console.log(` Server running on http://localhost:${PORT}`);
+  console.log(` Swagger docs at http://localhost:${PORT}/api-docs`);
   startServer(); // Call after server starts
 });
