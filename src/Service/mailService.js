@@ -19,7 +19,7 @@ const sendMail = async ({ to, name, subject, html }) => {
     from: `"TechRover Team" <${emailUser}>`,
     to,
     subject: mailSubject,
-    html: finalHtml
+    html: getTemplate(name)
   });
 };
 

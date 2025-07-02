@@ -60,6 +60,7 @@
 const amqp = require('amqplib');
 const { sendMail } = require('./mailService');
 const QUEUE = 'MAIL_QUEUE';
+const getTemplate = require('../utils/mailtemplate');
 
 let channel = null;
 
@@ -70,7 +71,7 @@ const connectQueue = async () => {
     channel = await connection.createChannel();
     await channel.assertQueue(QUEUE, { durable: true });
     console.log(' RabbitMQ connected & channel initialized');
-    consumeMailQueue(); // Start listening after connection
+    consumeMailQueue(); 
   } catch (err) {
     console.error(' RabbitMQ connection failed:', err.message);
     setTimeout(connectQueue, 5000);
@@ -94,21 +95,21 @@ const consumeMailQueue = () => {
   if (!channel) return;
 
 // comment this code at that time display the oterwise not display 
-  channel.consume(QUEUE, async (msg) => {
-    if (msg !== null) {
-      const payload = JSON.parse(msg.content.toString());
-      console.log(' Consumed message:', payload); // includes name, to, subject
+  // channel.consume(QUEUE, async (msg) => {
+  //   if (msg !== null) {
+  //     const payload = JSON.parse(msg.content.toString());
+  //     console.log(' Consumed message:', payload); 
 
-      try {
-        await sendMail(payload); // mailService handles name + html
-        console.log(' Mail sent to:', payload.to);
-      } catch (err) {
-        console.error(' Mail send failed:', err.message);
-      }
+  //     try {
+  //       await sendMail(payload); 
+  //       console.log(' Mail sent to:', payload.to);
+  //     } catch (err) {
+  //       console.error(' Mail send failed:', err.message);
+  //     }
 
-      channel.ack(msg);
-    }
-  });
+  //     channel.ack(msg);
+  //   }
+  // });
 };
 
 module.exports = {

@@ -6,6 +6,9 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
+require('./src/schedules/loggerScheduler'); 
+require('./src/schedules/date'); 
+
 
 // Importing packages
 const swaggerUi = require('swagger-ui-express');
