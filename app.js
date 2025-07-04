@@ -6,7 +6,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
-require('./src/schedules/loggerScheduler'); 
+// require('./src/schedules/loggerScheduler'); 
 require('./src/schedules/date'); 
 
 
@@ -35,8 +35,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // Sync database
 sequelize.sync({ alter: true })
-  .then(() => console.log('✅ Database synced'))
-  .catch((err) => console.error('❌ DB Sync error:', err));
+  .then(() => console.log('Database synced'))
+  .catch((err) => console.error(' DB Sync error:', err));
 
 // Auto-create folders if not present
 ['./data', './uploads', './files'].forEach(dir => {
@@ -58,8 +58,8 @@ const PORT = process.env.PORT || 8080;
 
 // Start Express + RabbitMQ consumer
 const startServer = async () => {
-  await connectQueue();     // ✅ RabbitMQ connection
-  //consumeMailQueue();       // ✅ Start consuming mail jobs
+  await connectQueue();     //  RabbitMQ connection
+  //consumeMailQueue();       //  Start consuming mail jobs
 };
 
 // Start server

@@ -1,47 +1,71 @@
-// // schedules/date.js
-// const schedule = require('node-schedule');
-
-// // Schedule Rule
-// const rule = new schedule.RecurrenceRule();
-
-// // Run daily at 2:30 PM
-// rule.hour = 14;
-// rule.minute = 30;
-
-// // Timezone (Asia/Kolkata = IST)
-// rule.tz = 'Asia/Kolkata';
-
-// // Start date (from when job should begin)
-// rule.start = new Date(2025, 6, 2); // July 2, 2025
-
-// // End date (after which job should stop)
-// rule.end = new Date(2025, 6, 5); // July 5, 2025
-
-// console.log('Job scheduled from:', rule.start.toLocaleString(), 'to', rule.end.toLocaleString());
-
-// schedule.scheduleJob(rule, () => {
-//   console.log('✅ Scheduled Job Running at:', new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
-// });
-
-// schedules/date.js
 const schedule = require('node-schedule');
 
-// Start Date: July 2, 2025 at 2:30 PM IST
-const startDate = new Date('2025-07-02T14:30:00+05:30');
+// Start Date (10 sec from now)
+const startDate = new Date(Date.now() + 10 * 1000);
+const endDate = new Date(startDate.getTime() + 10 * 60 * 1000); // 10-minute total window
 
-//end date
-const endDate = new Date('2025-07-05T14:30:00+05:30');
+console.log('Job Scheduled from:',startDate.toLocaleString('en-NP', { timeZone: 'Asia/Kathmandu' }),
+  'to', endDate.toLocaleString('en-NP', { timeZone: 'Asia/Kathmandu' })
+);
 
-console.log('Job scheduled from:', startDate.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }), 
-            'to', endDate.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
+const cronExpression = '* * * * *';
+let mainJob;
 
-// Define recurrence rule to run daily at 2:30 PM
-const rule = new schedule.RecurrenceRule();
-rule.hour = 14;
-rule.minute = new schedule.Range(0, 59, 10);
-rule.tz = 'Asia/Kolkata'; // India timezone
+// MAIN JOB FUNCTION
+function startMainJob(fromTime, toTime) {
+  mainJob = schedule.scheduleJob({start: fromTime,end: toTime,rule: cronExpression,tz: 'Asia/Kathmandu'},
+   () => {
+    const now = new Date();
+    console.log('\nJob Running...');
+    console.log('Kathmandu Time:', now.toLocaleString('en-NP', { timeZone: 'Asia/Kathmandu' }));
+    console.log('Kolkata Time  :', now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
+  });
+}
 
-// Schedule the job with start and end
-schedule.scheduleJob({ start: startDate, end: endDate, rule }, () => {
-  console.log('Scheduled Job Running at:', new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
+//RESCHEDULE FUNCTION
+function rescheduleMainJob(newStartTime) {
+  const updatedRule = {start: newStartTime,end: endDate,rule: cronExpression,tz: 'Asia/Kathmandu'};
+  const result = mainJob.reschedule(updatedRule);
+  console.log(result ? ' mainJob successfully rescheduled!': ' Failed to reschedule mainJob');
+}
+
+//Initial Start
+startMainJob(startDate, endDate);
+
+// Minute Counter Logic
+let minuteCount = 0;
+const maxMinutes = 3;
+
+schedule.scheduleJob(startDate, () => {
+  console.log(' Minute Counter Started at:',new Date().toLocaleString('en-NP', { timeZone: 'Asia/Kathmandu' }));
+
+  const minuteJob = schedule.scheduleJob('*/1 * * * *', () => {
+    minuteCount++;
+    console.log(`Minute Passed Count: ${minuteCount} — at`,
+      new Date().toLocaleString('en-NP', { timeZone: 'Asia/Kathmandu' }));
+
+    if (minuteCount >= maxMinutes) {
+      // Stop both jobs
+      minuteJob.cancel();
+      if (mainJob) {
+        mainJob.cancel();
+        console.log('\n mainJob stopped at:',
+          new Date().toLocaleString('en-NP', { timeZone: 'Asia/Kathmandu' }));
+      }
+      console.log(' Cron Job Cancelled after 3 minutes');
+
+      // Schedule resume after 5 minutes from STOP point
+      const now = new Date();
+      const resumeTime = new Date(now.getTime() + 5 * 60 * 1000);
+      console.log(' mainJob will resume at:',
+        resumeTime.toLocaleString('en-NP', { timeZone: 'Asia/Kathmandu' }));
+
+      // Use scheduleJob to delay reschedule without setTimeout
+      schedule.scheduleJob(resumeTime, () => {
+        console.log('\nRestarting mainJob at:',
+          new Date().toLocaleString('en-NP', { timeZone: 'Asia/Kathmandu' }));
+        rescheduleMainJob(resumeTime);
+      });
+    }
+  });
 });
