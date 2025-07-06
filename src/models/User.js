@@ -62,7 +62,22 @@ const User = db.define('users', {
       gender: {
         type: DataTypes.ENUM('MALE', 'FEMALE'),
         // allowNull: false,
-      }
+      },
+
+      isBlocked: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
+      failedAttempts: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+      blockedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+    // });
+  
 
 }, 
 {

@@ -8,6 +8,7 @@ const bcrypt = require('bcrypt');
 const { BadRequestException } = require('../utils/errors');
 const getTemplate = require('../utils/mailtemplate'); 
 const { sendToMailQueue } = require('../Service/rmqService');
+const { User } = require('../models'); 
 
 // const {BadRequestException, NotFoundException,} = require("../utils/errors");
 //const MessageConstant = require("../constants/MessageConstant");
@@ -46,28 +47,58 @@ const createUser = async (data) => {
   return newUser;
 };
 
-const login = async (data) => {
-  const { email, password } = data;
+//use for password block/ unblock 
+const MAX_ATTEMPTS = 5;
+const BLOCK_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
+const login = async ({ email, password }) => {
   if (!email || !password) {
-    throw new BadRequestException(MessageConstant.USER.ALL_FIELDS_REQUIRED);
+    throw new Error(MessageConstant.USER.ALL_FIELDS_REQUIRED);
   }
 
-  const user = await userRepo.findByEmail(email);
+  const user = await User.findOne({ where: { email } });
   if (!user) {
-    throw new BadRequestException(MessageConstant.USER.INVALID_EMAIL_OR_PASSWORD);
+    throw new Error(MessageConstant.USER.INVALID_EMAIL_OR_PASSWORD);
+  }
+
+  // Check if user is blocked
+  if (user.isBlocked) {
+    const unblockTime = new Date(user.blockedAt.getTime() + BLOCK_DURATION_MS);
+    const now = new Date();
+
+    if (now < unblockTime) {
+      const remainingMs = unblockTime - now;
+      const remainingMin = Math.ceil(remainingMs / 60000);
+      throw new Error(` Account is blocked. Try again in ${remainingMin} minute(s).`);
+    } else {
+      // Unblock user after block duration
+      await user.update({ isBlocked: false, failedAttempts: 0, blockedAt: null });
+    }
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    throw new BadRequestException(MessageConstant.USER.INVALID_EMAIL_OR_PASSWORD);
+    const attempts = user.failedAttempts + 1;
+    const updates = { failedAttempts: attempts };
+
+    if (attempts >= MAX_ATTEMPTS) {
+      updates.isBlocked = true;
+      updates.blockedAt = new Date();
+      await user.update(updates);
+      throw new Error(`Invalid credentials. Your account is now blocked for 5 minutes.`);
+    }
+
+    await user.update(updates);
+    throw new Error(`Invalid credentials (${attempts}/${MAX_ATTEMPTS} attempts)`);
   }
+
+  // Reset attempts on success
+  await user.update({ failedAttempts: 0, isBlocked: false, blockedAt: null });
 
   const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
   return { user, token };
 };
-
 
 
 //nodemailer ke liye
@@ -218,7 +249,7 @@ const sendWelcomeMailsToAllUsers = async () => {
     // console.log('Mail queued:', email, '-', name); 
 
   }
-};
+  };
 
 module.exports = {
   createUser,
