@@ -235,3 +235,61 @@ paths:
           description: Bad Request
         '500':
           description: Internal Server Error
+
+/users/login:
+  post:
+    summary: User login with block tracking
+    tags: [Users]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - email
+              - password
+            properties:
+              email:
+                type: string
+                example: johndoe@example.com
+              password:
+                type: string
+                example: example@123
+    responses:
+      '200':
+        description: Login successful
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                user:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 101
+                    name:
+                      type: string
+                      example: John Doe
+                    email:
+                      type: string
+                      example: johndoe@example.com
+                    isBlocked:
+                      type: boolean
+                      example: false
+                    failedAttempts:
+                      type: integer
+                      example: 0
+                    blockedAt:
+                      type: string
+                      format: date-time
+                      nullable: true
+                    blockCount:
+                      type: integer
+                      example: 2
+      '400':
+        description: Invalid credentials or blocked account

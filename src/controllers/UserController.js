@@ -1,4 +1,3 @@
-// controllers/userController.js
 const userService = require('../Service/userService');
 const User = require('../models');
 const menu = require('../models/menu');

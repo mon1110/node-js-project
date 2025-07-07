@@ -61,18 +61,20 @@ const login = async ({ email, password }) => {
     throw new Error(MessageConstant.USER.INVALID_EMAIL_OR_PASSWORD);
   }
 
-  // Check if user is blocked
+  // Check if blocked
   if (user.isBlocked) {
     const unblockTime = new Date(user.blockedAt.getTime() + BLOCK_DURATION_MS);
     const now = new Date();
 
     if (now < unblockTime) {
-      const remainingMs = unblockTime - now;
-      const remainingMin = Math.ceil(remainingMs / 60000);
+      const remainingMin = Math.ceil((unblockTime - now) / 60000);
       throw new Error(` Account is blocked. Try again in ${remainingMin} minute(s).`);
     } else {
-      // Unblock user after block duration
-      await user.update({ isBlocked: false, failedAttempts: 0, blockedAt: null });
+      await user.update({
+        isBlocked: false,
+        failedAttempts: 0,
+        blockedAt: null
+      });
     }
   }
 
@@ -84,22 +86,23 @@ const login = async ({ email, password }) => {
     if (attempts >= MAX_ATTEMPTS) {
       updates.isBlocked = true;
       updates.blockedAt = new Date();
-      await user.update(updates);
-      throw new Error(`Invalid credentials. Your account is now blocked for 5 minutes.`);
+      updates.blockCount = (user.blockCount || 0) + 1;
     }
 
     await user.update(updates);
-    throw new Error(`Invalid credentials (${attempts}/${MAX_ATTEMPTS} attempts)`);
+    throw new Error(`Invalid credentials (${attempts}/${MAX_ATTEMPTS})`);
   }
 
-  // Reset attempts on success
-  await user.update({ failedAttempts: 0, isBlocked: false, blockedAt: null });
+  // Success login
+  await user.update({
+    failedAttempts: 0,
+    isBlocked: false,
+    blockedAt: null
+  });
 
   const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
   return { user, token };
 };
-
 
 //nodemailer ke liye
 const getAllUsers = async () => {
