@@ -76,12 +76,7 @@ const User = db.define('users', {
         type: DataTypes.DATE,
         allowNull: true,
       },
-      blockCount: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0,
-      }
-      
-    // });
+    
   
 
 }, 

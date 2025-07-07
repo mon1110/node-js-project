@@ -6,6 +6,8 @@ const User = require('./user');
 const Product = require('./product');
 //const Menu = require('./menu');
 const menu = require('./menu');
+const Settings = require('./Settings'); // ✅ add this
+// db.Settings = Settings;
 
 
 // User.belongsToMany(Menu, { through: 'UserMenus', foreignKey: 'userId' });
@@ -20,6 +22,6 @@ Product.belongsTo(User, { foreignKey: 'userId' });
 // });
 User.hasMany(menu, { foreignKey: 'id',  as: 'menu' }); 
 
-module.exports = { User, Product, menu };
+module.exports = { User, Product, menu , Settings};
 
 

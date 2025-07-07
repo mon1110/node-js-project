@@ -16,6 +16,25 @@ const swaggerDocs = require('./src/config/swagger.config');
 const sequelize = require('./src/config/db.config');
 const Routes = require('./src/routes/index');
 const errorHandler = require('./src/middlewares/errorHandler');
+const { Settings } = require('./src/models'); 
+
+// const { Settings } = require('./src/models'); 
+
+sequelize.sync({ alter: true }).then(async () => {
+  console.log(' Database synced');
+
+  const setting = await Settings.findOne();
+  if (!setting) {
+    await Settings.create({
+      maxLoginAttempts: 5,
+      blockDurationMinutes: 5
+    });
+    console.log(' Default settings inserted');
+  }
+}).catch((err) => {
+  console.error(' DB Sync error:', err);
+});
+
 
 // Import mail queue handlers from service
 const { connectQueue } = require('./src/Service/rmqService'); 

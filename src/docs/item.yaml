@@ -238,7 +238,7 @@ paths:
 
 /users/login:
   post:
-    summary: User login with block tracking
+    summary: User login
     tags: [Users]
     requestBody:
       required: true
@@ -252,10 +252,10 @@ paths:
             properties:
               email:
                 type: string
-                example: johndoe@example.com
+                example: user@example.com
               password:
                 type: string
-                example: example@123
+                example: User@1234
     responses:
       '200':
         description: Login successful
@@ -264,32 +264,45 @@ paths:
             schema:
               type: object
               properties:
-                token:
-                  type: string
                 user:
                   type: object
                   properties:
                     id:
                       type: integer
-                      example: 101
+                      example: 1
                     name:
                       type: string
-                      example: John Doe
+                      example: Monika
                     email:
                       type: string
-                      example: johndoe@example.com
+                      example: monika@example.com
                     isBlocked:
                       type: boolean
                       example: false
-                    failedAttempts:
-                      type: integer
-                      example: 0
                     blockedAt:
                       type: string
                       format: date-time
-                      nullable: true
-                    blockCount:
-                      type: integer
-                      example: 2
+                      example: "2025-07-07T15:10:00.000Z"
+                token:
+                  type: string
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
       '400':
-        description: Invalid credentials or blocked account
+        description: Invalid credentials or user blocked
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: " Account is blocked. Try again in 3 minute(s)."
+      '401':
+        description: Unauthorized - Wrong password
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "Invalid credentials (3/5)"

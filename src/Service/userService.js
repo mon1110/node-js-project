@@ -9,9 +9,8 @@ const { BadRequestException } = require('../utils/errors');
 const getTemplate = require('../utils/mailtemplate'); 
 const { sendToMailQueue } = require('../Service/rmqService');
 const { User } = require('../models'); 
+const { Settings } = require('../models'); 
 
-// const {BadRequestException, NotFoundException,} = require("../utils/errors");
-//const MessageConstant = require("../constants/MessageConstant");
 
 const createUser = async (data) => {
   const { name, email, menuIds, password, gender } = data;
@@ -48,28 +47,32 @@ const createUser = async (data) => {
 };
 
 //use for password block/ unblock 
-const MAX_ATTEMPTS = 5;
-const BLOCK_DURATION_MS = 5 * 60 * 1000; // 5 minutes
-
 const login = async ({ email, password }) => {
   if (!email || !password) {
     throw new Error(MessageConstant.USER.ALL_FIELDS_REQUIRED);
   }
 
+  // Fetch config from DB
+  const settings = await Settings.findOne(); 
+
+  const MAX_ATTEMPTS = settings.maxLoginAttempts;         
+  const BLOCK_DURATION_MS = settings.blockDurationMinutes * 60 * 1000; 
+  
   const user = await User.findOne({ where: { email } });
   if (!user) {
     throw new Error(MessageConstant.USER.INVALID_EMAIL_OR_PASSWORD);
   }
 
-  // Check if blocked
+  // Block check
   if (user.isBlocked) {
     const unblockTime = new Date(user.blockedAt.getTime() + BLOCK_DURATION_MS);
     const now = new Date();
 
     if (now < unblockTime) {
       const remainingMin = Math.ceil((unblockTime - now) / 60000);
-      throw new Error(` Account is blocked. Try again in ${remainingMin} minute(s).`);
+      throw new Error(`Account is blocked. Try again in ${remainingMin} minute(s).`);
     } else {
+      // Unblock user
       await user.update({
         isBlocked: false,
         failedAttempts: 0,
@@ -78,6 +81,7 @@ const login = async ({ email, password }) => {
     }
   }
 
+  // Check password
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
     const attempts = user.failedAttempts + 1;
@@ -86,7 +90,6 @@ const login = async ({ email, password }) => {
     if (attempts >= MAX_ATTEMPTS) {
       updates.isBlocked = true;
       updates.blockedAt = new Date();
-      updates.blockCount = (user.blockCount || 0) + 1;
     }
 
     await user.update(updates);
@@ -111,7 +114,6 @@ const getAllUsers = async () => {
 
 
 //custom error ke liye ye use hoga
-
 const getUserById = async (id) => {
   if (!id || isNaN(id)) {
     throw new BadRequestException(MessageConstant.USER.INVALID_ID);
