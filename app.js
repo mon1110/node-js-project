@@ -20,20 +20,23 @@ const { Settings } = require('./src/models');
 
 // const { Settings } = require('./src/models'); 
 
-sequelize.sync({ alter: true }).then(async () => {
-  console.log(' Database synced');
+sequelize.sync({ alter: true })
+  .then(async () => {
+    console.log(' Database synced');
 
-  const setting = await Settings.findOne();
-  if (!setting) {
-    await Settings.create({
-      maxLoginAttempts: 5,
-      blockDurationMinutes: 5
-    });
-    console.log(' Default settings inserted');
-  }
-}).catch((err) => {
-  console.error(' DB Sync error:', err);
-});
+    const setting = await Settings.findOne();
+    if (!setting) {
+      await Settings.create({
+        maxLoginAttempts: 5,
+        blockDurationMinutes: 5
+      });
+      console.log('Default settings inserted');
+    }
+  })
+  .catch((err) => {
+    console.error(' DB Sync error:', err);
+  });
+
 
 
 // Import mail queue handlers from service
@@ -78,7 +81,6 @@ const PORT = process.env.PORT || 8080;
 // Start Express + RabbitMQ consumer
 const startServer = async () => {
   await connectQueue();     //  RabbitMQ connection
-  //consumeMailQueue();       //  Start consuming mail jobs
 };
 
 // Start server

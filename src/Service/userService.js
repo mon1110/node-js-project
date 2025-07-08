@@ -10,6 +10,7 @@ const getTemplate = require('../utils/mailtemplate');
 const { sendToMailQueue } = require('../Service/rmqService');
 const { User } = require('../models'); 
 const { Settings } = require('../models'); 
+const { getAppSettings } = require('../utils/settingsUtil');
 
 
 const createUser = async (data) => {
@@ -38,50 +39,51 @@ const createUser = async (data) => {
   const mailPayload = {
     to: email,
     subject: 'Welcome to Our App!',
-    html: getTemplate(name) // centralized template
+    html: getTemplate(name) 
   };
-
   await sendToMailQueue(mailPayload);
-
   return newUser;
 };
+
 
 //use for password block/ unblock 
 const login = async ({ email, password }) => {
   if (!email || !password) {
+    // throw new Error("All fields are required");\
     throw new Error(MessageConstant.USER.ALL_FIELDS_REQUIRED);
+
+    // throw new BadRequestException(MessageConstant.ALL_FIELDS_REQUIRED);
   }
 
-  // Fetch config from DB
-  const settings = await Settings.findOne(); 
-
-  const MAX_ATTEMPTS = settings.maxLoginAttempts;         
-  const BLOCK_DURATION_MS = settings.blockDurationMinutes * 60 * 1000; 
-  
   const user = await User.findOne({ where: { email } });
   if (!user) {
     throw new Error(MessageConstant.USER.INVALID_EMAIL_OR_PASSWORD);
   }
 
-  // Block check
+    // Block check
+    const { maxAttempts, blockDurationMs } = await getAppSettings();
+
+  // Load dynamic values from Settings table
+  const settings = await Settings.findOne();
+  const MAX_ATTEMPTS = settings?.maxLoginAttempts || 5;
+  const BLOCK_DURATION_MS = (settings?.blockDurationMinutes || 5) * 60 * 1000;
+  
+
   if (user.isBlocked) {
     const unblockTime = new Date(user.blockedAt.getTime() + BLOCK_DURATION_MS);
     const now = new Date();
-
     if (now < unblockTime) {
       const remainingMin = Math.ceil((unblockTime - now) / 60000);
-      throw new Error(`Account is blocked. Try again in ${remainingMin} minute(s).`);
+      throw new Error(`${MessageConstant.USER.BLOCKED} Try again in ${remainingMin} minute(s).`);
     } else {
-      // Unblock user
       await user.update({
         isBlocked: false,
         failedAttempts: 0,
-        blockedAt: null
+        // blockedAt: null
       });
     }
   }
 
-  // Check password
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
     const attempts = user.failedAttempts + 1;
@@ -93,14 +95,13 @@ const login = async ({ email, password }) => {
     }
 
     await user.update(updates);
-    throw new Error(`Invalid credentials (${attempts}/${MAX_ATTEMPTS})`);
+    throw new Error(`${MessageConstant.USER.INVALID_CREDENTIALS} (${attempts}/${MAX_ATTEMPTS})`);
   }
 
-  // Success login
   await user.update({
     failedAttempts: 0,
     isBlocked: false,
-    blockedAt: null
+    // blockedAt: null
   });
 
   const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });

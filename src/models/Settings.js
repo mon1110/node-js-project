@@ -11,7 +11,12 @@ const Settings = db.define("Settings", {
     type: DataTypes.INTEGER,
     allowNull: false,
     defaultValue: 5
-  }
+  },
+  softDelete: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+},
 
 }, {
   tableName: 'settings',

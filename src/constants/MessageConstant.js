@@ -23,7 +23,9 @@ module.exports = {
     FETCH_ALL_SUCCESS: "All users fetched successfully",
     EMAIL_FOUND: "User found by email",
     PASSWORD_UPDATE_SUCCESS: "Password updated successfully",
-    LOGIN_SUCCESS: "Login successful"
+    LOGIN_SUCCESS: "Login successful",
+    INVALID_CREDENTIALS: "Invalid credentials.",
+
   },
 
   AUTH: {
