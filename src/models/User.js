@@ -64,10 +64,10 @@ const User = db.define('users', {
         // allowNull: false,
       },
 
-      isBlocked: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
-      },
+      // isBlocked: {
+      //   type: DataTypes.BOOLEAN,
+      //   defaultValue: false,
+      // },
       failedAttempts: {
         type: DataTypes.INTEGER,
         defaultValue: 0,

@@ -40,13 +40,14 @@ const findByEmail = async (email) => {
   if (!email || typeof email !== "string") return null;
 
   return await User.findOne({
-    where: { email: email.toLowerCase() }
+    where: { email: email.toLowerCase(),
+      softDelete: false }
   });
 };
 
 //login ke liye
 const findUserByEmail = async (email) => {
-  return await User.findOne({ where: { email } });
+  return await User.findOne({ where: { email, softDelete: false } });
 };
 
 //custom error ke liye ye use hoga
@@ -171,7 +172,7 @@ const getUsers = async ({ filter = {}, sort = {}, page = {} }) => {
       whereClause.id = { [Op.in]: filter.ids };
     }
 
-    // ✅ Sorting
+    // Sorting
     const sortField = sort.sortBy || 'id';
     const sortOrder = sort.orderBy || 'DESC';
 
@@ -263,6 +264,13 @@ const getAllUsers = async () => {
   }
 };
 
+const resetLoginAttempts = async (id) => {
+  return await User.update(
+    { failedAttempts: 0, blockedAt: null },
+    { where: { id } }
+  );
+};
+
 
 
 module.exports = {
@@ -288,5 +296,6 @@ module.exports = {
   updatePassword,
   findByEmail,
   findAll,
-  findById
+  findById,
+  resetLoginAttempts
 }

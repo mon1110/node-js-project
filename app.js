@@ -20,24 +20,16 @@ const { Settings } = require('./src/models');
 
 // const { Settings } = require('./src/models'); 
 
-sequelize.sync({ alter: true })
-  .then(async () => {
-    console.log(' Database synced');
-
-    const setting = await Settings.findOne();
-    if (!setting) {
-      await Settings.create({
-        maxLoginAttempts: 5,
-        blockDurationMinutes: 5
-      });
-      console.log('Default settings inserted');
-    }
-  })
-  .catch((err) => {
-    console.error(' DB Sync error:', err);
-  });
-
-
+sequelize.sync({ alter: true }).then(async () => {
+  const count = await Settings.count();
+  if (count === 0) {
+    await Settings.bulkCreate([
+      { key: 'maxLoginAttempts', value: '5' },
+      { key: 'blockDurationMinutes', value: '5' },
+    ]);
+    console.log('Default settings inserted');
+  }
+});
 
 // Import mail queue handlers from service
 const { connectQueue } = require('./src/Service/rmqService'); 

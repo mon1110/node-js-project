@@ -237,63 +237,51 @@ paths:
           description: Internal Server Error
 
 
-  /api/users/login:
-    post:
-      tags:
-        - Users
-      summary: User login with block/unblock on failed attempts
-      description: >
-        Allows user to login with email and password. Blocks the user after max failed attempts 
-        defined in settings table. Automatically unblocks after block duration.
-      requestBody:
-        required: true
+/api/users/login:
+  post:
+    tags:
+      - Users
+    summary: User login with block/unblock on failed attempts
+    description: >
+      Allows user to login with email and password. Blocks the user after max failed attempts 
+      defined in settings table. Automatically unblocks after block duration.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - email
+              - password
+            properties:
+              email:
+                type: string
+                format: email
+                example: test@example.com
+              password:
+                type: string
+                example: Test@123
+    responses:
+      '200':
+        description: Login successful
         content:
           application/json:
             schema:
               type: object
-              required:
-                - email
-                - password
               properties:
-                email:
+                token:
                   type: string
-                  format: email
-                  example: test@example.com
-                password:
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                user:
+                  $ref: '#/components/schemas/User'
+      '401':
+        description: Invalid email or password
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
                   type: string
-                  example: Test@123
-      responses:
-        '200':
-          description: Login successful
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-                  user:
-                    $ref: '#/components/schemas/User'
-        '400':
-          description: Missing required fields
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Email and password are required
-        '401':
-          description: Invalid credentials or blocked
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example:  Account is blocked. Try again in 5 minute(s).
-        '500':
-          description: Server error
+                  example: Invalid email or password

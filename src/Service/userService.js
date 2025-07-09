@@ -10,7 +10,8 @@ const getTemplate = require('../utils/mailtemplate');
 const { sendToMailQueue } = require('../Service/rmqService');
 const { User } = require('../models'); 
 const { Settings } = require('../models'); 
-const { getAppSettings } = require('../utils/settingsUtil');
+const { getAuthConfig } = require('../utils/settingsUtil');
+const { generateToken } = require('../utils/jwt'); 
 
 
 const createUser = async (data) => {
@@ -49,38 +50,27 @@ const createUser = async (data) => {
 //use for password block/ unblock 
 const login = async ({ email, password }) => {
   if (!email || !password) {
-    // throw new Error("All fields are required");\
-    throw new Error(MessageConstant.USER.ALL_FIELDS_REQUIRED);
-
-    // throw new BadRequestException(MessageConstant.ALL_FIELDS_REQUIRED);
+    throw new BadRequestException(MessageConstant.USER.ALL_FIELDS_REQUIRED);
   }
 
-  const user = await User.findOne({ where: { email } });
+  const user = await userRepo.findByEmail(email);
   if (!user) {
-    throw new Error(MessageConstant.USER.INVALID_EMAIL_OR_PASSWORD);
+    throw new BadRequestException(MessageConstant.USER.INVALID_EMAIL_OR_PASSWORD);
   }
 
-    // Block check
-    const { maxAttempts, blockDurationMs } = await getAppSettings();
+  const { maxAttempts, blockDurationMs } = await getAuthConfig();
 
-  // Load dynamic values from Settings table
-  const settings = await Settings.findOne();
-  const MAX_ATTEMPTS = settings?.maxLoginAttempts || 5;
-  const BLOCK_DURATION_MS = (settings?.blockDurationMinutes || 5) * 60 * 1000;
-  
-
-  if (user.isBlocked) {
-    const unblockTime = new Date(user.blockedAt.getTime() + BLOCK_DURATION_MS);
+  // Check if blocked
+  if (user.blockedAt) {
+    const unblockTime = new Date(user.blockedAt.getTime() + blockDurationMs);
     const now = new Date();
+
     if (now < unblockTime) {
       const remainingMin = Math.ceil((unblockTime - now) / 60000);
-      throw new Error(`${MessageConstant.USER.BLOCKED} Try again in ${remainingMin} minute(s).`);
+      throw new BadRequestException(`${MessageConstant.USER.BLOCKED} Try again in ${remainingMin} minute(s).`);
     } else {
-      await user.update({
-        isBlocked: false,
-        failedAttempts: 0,
-        // blockedAt: null
-      });
+      // Unblock after block duration
+      await userRepo.resetLoginAttempts(user.id);
     }
   }
 
@@ -89,24 +79,21 @@ const login = async ({ email, password }) => {
     const attempts = user.failedAttempts + 1;
     const updates = { failedAttempts: attempts };
 
-    if (attempts >= MAX_ATTEMPTS) {
-      updates.isBlocked = true;
-      updates.blockedAt = new Date();
+    if (attempts >= maxAttempts) {
+      updates.blockedAt = new Date(); 
     }
 
     await user.update(updates);
-    throw new Error(`${MessageConstant.USER.INVALID_CREDENTIALS} (${attempts}/${MAX_ATTEMPTS})`);
+    throw new BadRequestException(`${MessageConstant.USER.INVALID_CREDENTIALS} (${attempts}/${maxAttempts})`);
   }
 
-  await user.update({
-    failedAttempts: 0,
-    isBlocked: false,
-    // blockedAt: null
-  });
+  // Success login → reset
+  await userRepo.resetLoginAttempts(user.id);
 
-  const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  const token = generateToken({ userId: user.id });
   return { user, token };
 };
+
 
 //nodemailer ke liye
 const getAllUsers = async () => {
@@ -131,7 +118,7 @@ const getUserById = async (id) => {
 const updateUser = async (id, updateData) => {
   const user = await userRepo.findById(id);
   if (!user) {
-    throw new NotFoundException("User not found");
+    throw new Error(MessageConstant.USER.NOT_FOUND);
   }
 
   return await userRepo.updateUser(id, updateData);
@@ -177,7 +164,7 @@ const getUsersByIds = async (ids) => {
 
 const assignMenusToUser = async (userId, menuIds) => {
   const user = await userRepo.findUserById(userId);
-  if (!user) throw new Error('User not found');
+  if (!user) throw new Error(MessageConstant.USER.NOT_FOUND);
 
   return await userRepo.updateUserMenus(user, menuIds);
 };

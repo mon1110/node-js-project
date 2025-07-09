@@ -1,23 +1,21 @@
 const { DataTypes } = require('sequelize');
-const db = require('../config/db.config'); // your sequelize instance
+const db = require('../config/db.config');
 
 const Settings = db.define("Settings", {
-  maxLoginAttempts: {
-    type: DataTypes.INTEGER,
+  key: {
+    type: DataTypes.STRING,
     allowNull: false,
-    defaultValue: 5
+    unique: true,
   },
-  blockDurationMinutes: {
-    type: DataTypes.INTEGER,
+  value: {
+    type: DataTypes.STRING,
     allowNull: false,
-    defaultValue: 5
   },
   softDelete: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
     defaultValue: false,
-},
-
+  }
 }, {
   tableName: 'settings',
   timestamps: false

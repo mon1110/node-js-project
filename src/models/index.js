@@ -6,7 +6,7 @@ const User = require('./user');
 const Product = require('./product');
 //const Menu = require('./menu');
 const menu = require('./menu');
-const Settings = require('./Settings'); // ✅ add this
+const Settings = require('./Settings'); 
 // db.Settings = Settings;
 
 

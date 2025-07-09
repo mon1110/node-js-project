@@ -25,7 +25,7 @@ module.exports = {
     PASSWORD_UPDATE_SUCCESS: "Password updated successfully",
     LOGIN_SUCCESS: "Login successful",
     INVALID_CREDENTIALS: "Invalid credentials.",
-
+    EMAIL_REQUIRED:"email required"
   },
 
   AUTH: {
