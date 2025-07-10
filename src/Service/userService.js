@@ -62,29 +62,39 @@ const login = async ({ email, password }) => {
   const { maxAttempts, blockDurationMs } = await getAuthConfig();
   const now = new Date();
 
+  // Check if user is blocked
   if (user.blockedAt) {
     const unblockTime = new Date(user.blockedAt.getTime() + blockDurationMs);
     if (now < unblockTime) {
       const remainingMin = Math.ceil((unblockTime - now) / 60000);
       throw new BadRequestException(MessageConstant.USER.blockedWithTimer(remainingMin));
     } else {
+      // Auto unblock if block duration passed
       await userRepo.updateUser(user.id, { failedAttempts: 0, blockedAt: null });
-      return await login({ email, password }); // Retry login
+      return await login({ email, password }); // Retry login after unblock
     }
   }
 
+  // Check password
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
     const attempts = user.failedAttempts + 1;
     const updates = { failedAttempts: attempts };
 
     if (attempts >= maxAttempts) {
-      updates.blockedAt = new Date();
+      const blockedAt = new Date();
+      updates.blockedAt = blockedAt;
 
-      const unblockTime = new Date(Date.now() + blockDurationMs);
-      schedule.scheduleJob(user.id,unblockTime, async () => {
-        console.log(`Auto-unblocking user with ID: ${user.id} at ${new Date().toLocaleString()}`);
-        await userRepo.updateUser(user.id, { failedAttempts: 0 });
+      const unblockTime = new Date(blockedAt.getTime() + blockDurationMs);
+
+      // Custom job key
+      const jobKey = `unblock-${user.name}-${Date.now()}`;
+
+      // Schedule auto-unblock
+      schedule.scheduleJob(jobKey, unblockTime, async () => {
+        console.log(`Auto-unblocking user with name: ${user.name} at ${new Date().toLocaleString()}`);
+        await userRepo.updateUser(user.id, { failedAttempts: 0});
+
       });
     }
 
@@ -94,11 +104,11 @@ const login = async ({ email, password }) => {
     );
   }
 
-  await userRepo.updateUser(user.id, { failedAttempts: 0, blockedAt: null });
+  // Success: Reset attempts
+  await userRepo.updateUser(user.id, { failedAttempts: 0});
   const token = generateToken({ userId: user.id });
   return { user, token };
 };
-
 
 
 //nodemailer ke liye
