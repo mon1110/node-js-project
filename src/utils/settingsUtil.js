@@ -1,3 +1,4 @@
+// utils/settingsUtil.js
 const { Settings } = require('../models');
 
 const getAuthConfig = async () => {

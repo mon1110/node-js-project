@@ -116,6 +116,18 @@ class InternalServerErrorException extends ApiError {
   }
 }
 
+class ProcessingErrorException extends ApiError {
+  constructor(message = ReasonPhrases.PROCESSING) {
+    super(message, StatusCodes.PROCESSING);
+  }
+}
+
+class LockedrrorException extends ApiError {
+  constructor(message = ReasonPhrases.LOCKED) {
+    super(message, StatusCodes.LOCKED);
+  }
+}
+
 module.exports = {
   ApiError,
   BadRequestException,
@@ -124,5 +136,7 @@ module.exports = {
   ForbiddenException,
   ConflictException,
   UnprocessableEntityException,
-  InternalServerErrorException
+  InternalServerErrorException,
+  ProcessingErrorException,
+  LockedrrorException
 };

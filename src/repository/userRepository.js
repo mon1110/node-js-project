@@ -20,13 +20,11 @@ const findById = async (id) => {
 };
 
 const updateUser = async (id, data) => {
-  console.log("id:", id)
   const [updated] = await User.update(data, {
-    where: { id },
-    returning :true,
+    where: { id, softDelete: false },
+    returning: true,
   });
-  
-  //return updated ? await User.findByPk(id) : null;
+  return updated;
 };
 
 //update password
@@ -264,12 +262,14 @@ const getAllUsers = async () => {
   }
 };
 
-const resetLoginAttempts = async (id) => {
-  return await User.update(
-    { failedAttempts: 0, blockedAt: null },
-    { where: { id } }
-  );
-};
+// const resetLoginAttempts = async (userId) => {
+//   await User.update(
+//     { failedAttempts: 0, blockedAt: null },
+//     {
+//       where: { id: userId, softDelete: false }
+//     }
+//   );
+// };
 
 
 
@@ -297,5 +297,5 @@ module.exports = {
   findByEmail,
   findAll,
   findById,
-  resetLoginAttempts
+  // resetLoginAttempts
 }

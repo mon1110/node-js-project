@@ -48,6 +48,7 @@ const createUser = async (data) => {
 
 
 //use for password block/ unblock 
+const schedule = require('node-schedule');
 const login = async ({ email, password }) => {
   if (!email || !password) {
     throw new BadRequestException(MessageConstant.USER.ALL_FIELDS_REQUIRED);
@@ -59,18 +60,16 @@ const login = async ({ email, password }) => {
   }
 
   const { maxAttempts, blockDurationMs } = await getAuthConfig();
+  const now = new Date();
 
-  // Check if blocked
   if (user.blockedAt) {
     const unblockTime = new Date(user.blockedAt.getTime() + blockDurationMs);
-    const now = new Date();
-
     if (now < unblockTime) {
       const remainingMin = Math.ceil((unblockTime - now) / 60000);
-      throw new BadRequestException(`${MessageConstant.USER.BLOCKED} Try again in ${remainingMin} minute(s).`);
+      throw new BadRequestException(MessageConstant.USER.blockedWithTimer(remainingMin));
     } else {
-      // Unblock after block duration
-      await userRepo.resetLoginAttempts(user.id);
+      await userRepo.updateUser(user.id, { failedAttempts: 0, blockedAt: null });
+      return await login({ email, password }); // Retry login
     }
   }
 
@@ -80,19 +79,26 @@ const login = async ({ email, password }) => {
     const updates = { failedAttempts: attempts };
 
     if (attempts >= maxAttempts) {
-      updates.blockedAt = new Date(); 
+      updates.blockedAt = new Date();
+
+      const unblockTime = new Date(Date.now() + blockDurationMs);
+      schedule.scheduleJob(user.id,unblockTime, async () => {
+        console.log(`Auto-unblocking user with ID: ${user.id} at ${new Date().toLocaleString()}`);
+        await userRepo.updateUser(user.id, { failedAttempts: 0 });
+      });
     }
 
     await user.update(updates);
-    throw new BadRequestException(`${MessageConstant.USER.INVALID_CREDENTIALS} (${attempts}/${maxAttempts})`);
+    throw new BadRequestException(
+      MessageConstant.USER.invalidCredentialWithCount(attempts, maxAttempts)
+    );
   }
 
-  // Success login → reset
-  await userRepo.resetLoginAttempts(user.id);
-
+  await userRepo.updateUser(user.id, { failedAttempts: 0, blockedAt: null });
   const token = generateToken({ userId: user.id });
   return { user, token };
 };
+
 
 
 //nodemailer ke liye
