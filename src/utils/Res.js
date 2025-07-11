@@ -2,20 +2,16 @@ class Res {
   static success(res, message = 'Success', data = {}, statusCode = 200) {
     return res.status(statusCode).json({
       success: true,
-      description: {
-        message,
-        ...data
-      }
+      message,
+      data
     });
   }
 
   static error(res, message = 'Something went wrong', error = {}, statusCode = 500) {
     return res.status(statusCode).json({
       success: false,
-      description: {
-        message,
-        ...error
-      }
+      message,
+      error
     });
   }
 
@@ -34,7 +30,7 @@ class Res {
   static notFound(res, message = 'Resource not found', error = {}) {
     return this.error(res, message, error, 404);
   }
-
+  
   static noContent(res, message = 'No Content') {
     return res.status(204).json({
       success: true,

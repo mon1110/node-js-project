@@ -4,7 +4,6 @@ const MessageConstant = require("../constants/MessageConstant");
 const { sendEmail } = require("../utils/EmailService");
 const jwt = require('jsonwebtoken');
 const SECRET_KEY = 'your-secret-key'; 
-const bcrypt = require('bcrypt');
 const { BadRequestException } = require('../utils/errors');
 const getTemplate = require('../utils/mailtemplate'); 
 const { sendToMailQueue } = require('../Service/rmqService');
@@ -12,6 +11,9 @@ const { User } = require('../models');
 const { Settings } = require('../models'); 
 const { getAuthConfig } = require('../utils/settingsUtil');
 const { generateToken } = require('../utils/jwt'); 
+const schedule = require('node-schedule');
+const bcrypt = require('bcrypt');
+const { scheduleUserUnblock } = require('./schedulerService');
 
 
 const createUser = async (data) => {
@@ -48,7 +50,7 @@ const createUser = async (data) => {
 
 
 //use for password block/ unblock 
-const schedule = require('node-schedule');
+
 const login = async ({ email, password }) => {
   if (!email || !password) {
     throw new BadRequestException(MessageConstant.USER.ALL_FIELDS_REQUIRED);
@@ -62,53 +64,56 @@ const login = async ({ email, password }) => {
   const { maxAttempts, blockDurationMs } = await getAuthConfig();
   const now = new Date();
 
-  // Check if user is blocked
+  // Already blocked
   if (user.blockedAt) {
     const unblockTime = new Date(user.blockedAt.getTime() + blockDurationMs);
     if (now < unblockTime) {
       const remainingMin = Math.ceil((unblockTime - now) / 60000);
       throw new BadRequestException(MessageConstant.USER.blockedWithTimer(remainingMin));
     } else {
-      // Auto unblock if block duration passed
-      await userRepo.updateUser(user.id, { failedAttempts: 0, blockedAt: null });
-      return await login({ email, password }); // Retry login after unblock
+      // Unblock after timeout
+      await userRepo.updateByEmail(user.email, { failedAttempts: 0, blockedAt: null });
+      user.failedAttempts = 0;
+      user.blockedAt = null;
     }
   }
 
-  // Check password
+  //Stop login if already exceeded attempts
+  if (user.failedAttempts >= maxAttempts) {
+    throw new BadRequestException(
+      MessageConstant.USER.invalidCredentialWithCount(user.failedAttempts, maxAttempts)
+    );
+  }
+
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
     const attempts = user.failedAttempts + 1;
     const updates = { failedAttempts: attempts };
 
     if (attempts >= maxAttempts) {
-      const blockedAt = new Date();
-      updates.blockedAt = blockedAt;
-
-      const unblockTime = new Date(blockedAt.getTime() + blockDurationMs);
-
-      // Custom job key
-      const jobKey = `unblock-${user.name}-${Date.now()}`;
-
-      // Schedule auto-unblock
-      schedule.scheduleJob(jobKey, unblockTime, async () => {
-        console.log(`Auto-unblocking user with name: ${user.name} at ${new Date().toLocaleString()}`);
-        await userRepo.updateUser(user.id, { failedAttempts: 0});
-
-      });
+      updates.blockedAt = new Date();
     }
 
-    await user.update(updates);
+    await userRepo.updateByEmail(user.email, updates);
+
+    // Schedule unblock only at exact block time
+    if (attempts === maxAttempts) {
+      const unblockTime = new Date(Date.now() + blockDurationMs);
+      await scheduleUserUnblock(user, unblockTime);
+    }
+
     throw new BadRequestException(
       MessageConstant.USER.invalidCredentialWithCount(attempts, maxAttempts)
     );
   }
 
-  // Success: Reset attempts
-  await userRepo.updateUser(user.id, { failedAttempts: 0});
+  // Successful login – reset counters
+  await userRepo.updateByEmail(user.email, { failedAttempts: 0, blockedAt: null });
+
   const token = generateToken({ userId: user.id });
   return { user, token };
 };
+
 
 
 //nodemailer ke liye

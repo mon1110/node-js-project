@@ -262,15 +262,11 @@ const getAllUsers = async () => {
   }
 };
 
-// const resetLoginAttempts = async (userId) => {
-//   await User.update(
-//     { failedAttempts: 0, blockedAt: null },
-//     {
-//       where: { id: userId, softDelete: false }
-//     }
-//   );
-// };
-
+const updateByEmail = async (email, data) => {
+  return await User.update(data, {
+    where: { email },
+  });
+};
 
 
 module.exports = {
@@ -297,5 +293,5 @@ module.exports = {
   findByEmail,
   findAll,
   findById,
-  // resetLoginAttempts
+   updateByEmail
 }
