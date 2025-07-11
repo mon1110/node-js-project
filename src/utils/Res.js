@@ -1,41 +1,51 @@
 class Res {
-  static success(res, message = 'Success', data = {}, statusCode = 200) {
+  static success(res, data = {}, description = 'Success', statusCode = 200, token = null) {
     return res.status(statusCode).json({
-      success: true,
-      message,
-      data
+      data,
+      ...(token && { token }),
+      status: {
+        status: "ok",
+        code: statusCode,
+        description
+      }
     });
   }
 
-  static error(res, message = 'Something went wrong', error = {}, statusCode = 500) {
+  static error(res, description = 'Something went wrong', data = {}, statusCode = 500) {
     return res.status(statusCode).json({
-      success: false,
-      message,
-      error
+      data,
+      status: {
+        status: "error",
+        code: statusCode,
+        description
+      }
     });
   }
 
-  static created(res, message = 'Resource created successfully', data = {}) {
-    return this.success(res, message, data, 201);
+  static created(res, data = {}, description = 'Created') {
+    return this.success(res, data, description, 201);
   }
 
-  static badRequest(res, message = 'Bad Request', error = {}) {
-    return this.error(res, message, error, 400);
+  static badRequest(res, description = 'Bad Request', data = {}) {
+    return this.error(res, description, data, 400);
   }
 
-  static unauthorized(res, message = 'Unauthorized', error = {}) {
-    return this.error(res, message, error, 401);
+  static unauthorized(res, description = 'Unauthorized', data = {}) {
+    return this.error(res, description, data, 401);
   }
 
-  static notFound(res, message = 'Resource not found', error = {}) {
-    return this.error(res, message, error, 404);
+  static notFound(res, description = 'Not Found', data = {}) {
+    return this.error(res, description, data, 404);
   }
-  
-  static noContent(res, message = 'No Content') {
+
+  static noContent(res, description = 'No Content') {
     return res.status(204).json({
-      success: true,
-      message,
-      data: {}
+      data: {},
+      status: {
+        status: "ok",
+        code: 204,
+        description
+      }
     });
   }
 }
