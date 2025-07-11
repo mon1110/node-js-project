@@ -44,6 +44,7 @@ const login = async (req, res, next) => {
   }
 };
 
+
 const updateUserPassword = async (req, res, next) => {
   try {
     await userService.updatePassword(req);
