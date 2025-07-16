@@ -72,17 +72,10 @@ const login = async ({ email, password }) => {
       throw new BadRequestException(MessageConstant.USER.blockedWithTimer(remainingMin));
     } else {
       // Unblock after timeout
-      await userRepo.updateByEmail(user.email, { failedAttempts: 0, blockedAt: null });
+      await userRepo.updateByEmail(user.email, { failedAttempts: 0 });
       user.failedAttempts = 0;
-      user.blockedAt = null;
+      // user.blockedAt = null;
     }
-  }
-
-  //Stop login if already exceeded attempts
-  if (user.failedAttempts >= maxAttempts) {
-    throw new BadRequestException(
-      MessageConstant.USER.invalidCredentialWithCount(user.failedAttempts, maxAttempts)
-    );
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
@@ -113,6 +106,7 @@ const login = async ({ email, password }) => {
   const token = generateToken({ userId: user.id });
   return { user, token };
 };
+
 
 
 

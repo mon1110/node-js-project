@@ -22,10 +22,20 @@ const findById = async (id) => {
 const updateUser = async (id, data) => {
   const [updated] = await User.update(data, {
     where: { id, softDelete: false },
-    returning: true,
+    returning: true
   });
   return updated;
 };
+
+// ✅ Update by Email (used for unblock)
+const updateByEmail = async (email, data) => {
+  const [updated] = await User.update(data, {
+    where: { email },
+    returning: true
+  });
+  return updated;
+};
+
 
 //update password
 const updatePassword = async (id, rawPassword) => {
@@ -262,11 +272,11 @@ const getAllUsers = async () => {
   }
 };
 
-const updateByEmail = async (email, data) => {
-  return await User.update(data, {
-    where: { email },
-  });
-};
+// const updateByEmail = async (email, data) => {
+//   return await User.update(data, {
+//     where: { email },
+//   });
+// };
 
 
 module.exports = {
