@@ -6,6 +6,7 @@ module.exports = {
     UPDATE_SUCCESS: "User updated successfully",
     DELETE_SUCCESS: "User deleted successfully",
     FETCH_SUCCESS: "User(s) fetched successfully",
+    FETCH_FAILED: "Failed to fetch posts",
     NOT_FOUND: "User not found",
     EMAIL_EXISTS: "Email already exists",
     INVALID_ID: "Invalid user ID",

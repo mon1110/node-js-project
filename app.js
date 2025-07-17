@@ -17,6 +17,7 @@ const sequelize = require('./src/config/db.config');
 const Routes = require('./src/routes/index');
 const errorHandler = require('./src/middlewares/errorHandler');
 const { Settings } = require('./src/models'); 
+// const Routes = require('./src/routes/userRoutes');
 
 // const { Settings } = require('./src/models'); 
 
@@ -43,6 +44,7 @@ app.use(cors());
 // Middleware to parse request body
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/api', require('./src/routes/userRoutes'));
 
 // Swagger documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));

@@ -19,5 +19,17 @@ class ApiResponse {
     };
   }
 }
+// class ApiResponse {
+//   constructor(code, message, data = null) {
+//     this.status = {
+//       status: code >= 200 && code < 300 ? 'success' : 'error',
+//       code,
+//       description: message,
+//     };
+//     this.data = data;
+//   }
+// }
+
+
 
 module.exports = ApiResponse;

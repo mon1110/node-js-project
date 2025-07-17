@@ -3,9 +3,13 @@ const User = require('../models');
 const menu = require('../models/menu');
 const MessageConstant = require("../constants/MessageConstant");
 const { BadRequestException } = require('../utils/errors');
-const {getTemplate} = require('../utils/mailTemplate');
+const {getTemplate} = require("../utils/mailTemplate");
 const { sendToMailQueue } = require('../Service/rmqService');
 const Res = require('../utils/Res');
+const ApiResponse = require('../utils/ApiResponse');
+const axios = require('axios');
+const jsonPlaceholderService = require('../Service/jsonPlaceholderService');
+
 
 const createUser = async (req, res, next) => {
   try {
@@ -211,6 +215,82 @@ const registerUser = async (req, res, next) => {
 };
 
 
+
+
+
+// GET all
+// const getAllPosts = async (req, res, next) => {
+//   try {
+//     const response = await axios.get('https://jsonplaceholder.typicode.com/posts');
+//     return res.status(200).json(
+//       ApiResponse.success(response.data, MessageConstant.USER.FETCH_SUCCESS)
+//     );
+//   } catch (error) {
+//     console.log(error)
+//     return res.status(500).json(
+//       ApiResponse.error(null, 500, MessageConstant.USER.FETCH_FAILED)
+//     );
+//   }
+// };
+
+
+
+// // GET by ID
+// const getPostById = async (req, res, next) => {
+//   try {
+//     const post = await userService.fetchExternalPostById(req.params.id);
+//     res.status(200).json({ data: post });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
+
+// // CREATE
+// const createPost = async (req, res, next) => {
+//   try {
+//     const post = await userService.createExternalPost(req.body);
+//     res.status(201).json({ data: post });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
+
+// // UPDATE
+// const updatePost = async (req, res, next) => {
+//   try {
+//     const post = await userService.updateExternalPost(req.params.id, req.body);
+//     res.status(200).json({ data: post });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
+
+// // DELETE
+// const deletePost = async (req, res, next) => {
+//   try {
+//     await userService.deleteExternalPost(req.params.id);
+//     res.status(204).json({ message: "Deleted successfully" });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
+
+const handleJsonPlaceholder = async (req, res, next) => {
+  try {
+    const { method, id, data } = req.body;
+
+    if (!method) {
+      return res.status(400).json(ApiResponse.error(null, 400, 'Method is required'));
+    }
+
+    const result = await jsonPlaceholderService.handleRequest(method.toUpperCase(), id, data);
+    res.status(200).json(ApiResponse.success(result, MessageConstant.USER.FETCH_SUCCESS));
+  } catch (error) {
+    res.status(500).json(ApiResponse.error(null, 500, error.message));
+  }
+};
+
+
 module.exports = {
   createUser,
   getUserById,
@@ -230,5 +310,11 @@ module.exports = {
   login,
   updateUserPassword,
   findByEmail,
-  registerUser
+  registerUser,
+  handleJsonPlaceholder
+  // getAllPosts,
+  // getPostById,
+  // createPost,
+  // updatePost,
+  // deletePost
 };

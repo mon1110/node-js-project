@@ -38,6 +38,11 @@ class Res {
     return this.error(res, description, data, 404);
   }
 
+  static sendResponse(res, apiResponse) {
+    return res.status(apiResponse.status.code).json(apiResponse);
+  }
+
+
   static noContent(res, description = 'No Content') {
     return res.status(204).json({
       data: {},

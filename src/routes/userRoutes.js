@@ -5,9 +5,14 @@ const { fetchAllUsers } = require('../controllers/UserController');
 const authenticateToken = require('../middlewares/authMiddleware');
 const { registerUser } = require('../controllers/UserController');
 
+// const userController = require('../controllers/UserController');
+
+router.post('/external-posts', userController.handleJsonPlaceholder);
+
 
 //nodemailer ke liye
 router.get("/node", userController.getAllUsers);
+// router.get('/posts', userController.getAllPosts);
 
 //joining
 router.post('/users-menu', userController.getUsersWithmenu);
@@ -62,6 +67,11 @@ router.post("/save", userController.saveUser);
 
 //RMQ ke liye
 router.post('/registeraaa', userController.registerUser); 
+
+// router.get('/posts/:id', userController.getPostById);
+// router.post('/posts', userController.createPost);
+// router.put('/posts/:id', userController.updatePost);
+// router.delete('/posts/:id', userController.deletePost);
 
 
 //swagger
