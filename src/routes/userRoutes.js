@@ -5,9 +5,8 @@ const { fetchAllUsers } = require('../controllers/UserController');
 const authenticateToken = require('../middlewares/authMiddleware');
 const { registerUser } = require('../controllers/UserController');
 
-// const userController = require('../controllers/UserController');
 
-router.post('/external-posts', userController.handleJsonPlaceholder);
+router.all('/external-api',userController.processExternalApi); 
 
 
 //nodemailer ke liye

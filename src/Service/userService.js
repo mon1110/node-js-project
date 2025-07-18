@@ -14,8 +14,7 @@ const { generateToken } = require('../utils/jwt');
 const schedule = require('node-schedule');
 const bcrypt = require('bcrypt');
 const { scheduleUserUnblock } = require('./schedulerService');
-const axios = require('axios');
-const BASE_URL = 'https://jsonplaceholder.typicode.com/posts';
+
 
 
 const createUser = async (data) => {
@@ -263,42 +262,6 @@ const sendWelcomeMailsToAllUsers = async () => {
 
 
 
-  
-// GET all posts
-// const getPostById = async () => {
-//   const res = await axios.get(`${BASE_URL}/users`);
-//   return res.data;
-// };
-
-
-// // GET post by ID
-// const fetchExternalPostById = async (id) => {
-//   const response = await axios.get(`${BASE_URL}/${id}`);
-//   return response.data;
-// };
-
-// // CREATE post
-// const createExternalPost = async (data) => {
-//   const response = await axios.post(BASE_URL, data, {
-//     headers: { 'Content-Type': 'application/json' }
-//   });
-//   return response.data;
-// };
-
-// // UPDATE post
-// const updateExternalPost = async (id, data) => {
-//   const response = await axios.put(`${BASE_URL}/${id}`, data, {
-//     headers: { 'Content-Type': 'application/json' }
-//   });
-//   return response.data;
-// };
-
-// // DELETE post
-// const deleteExternalPost = async (id) => {
-//   const response = await axios.delete(`${BASE_URL}/${id}`);
-//   return response.data;
-// };
-
 
 
 module.exports = {
@@ -322,9 +285,4 @@ module.exports = {
   updatePassword,
   findByEmail,
   sendWelcomeMailsToAllUsers,
-  // getPostById,
-  // fetchExternalPostById,
-  // createExternalPost,
-  // updateExternalPost,
-  // deleteExternalPost
 };

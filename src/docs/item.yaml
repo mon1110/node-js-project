@@ -285,3 +285,35 @@ paths:
                 message:
                   type: string
                   example: Invalid email or password
+
+
+/api/external-api:
+  post:
+    summary: Perform external API calls (GET, POST, PUT, DELETE)
+    tags:
+      - External API
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              method:
+                type: string
+                enum: [GET, POST, PUT, DELETE]
+              url:
+                type: string
+              data:
+                type: object
+                additionalProperties: true
+            required:
+              - method
+              - url
+    responses:
+      '200':
+        description: Successful external API call
+      '400':
+        description: Invalid input
+      '500':
+        description: Internal server error

@@ -8,7 +8,7 @@ const { sendToMailQueue } = require('../Service/rmqService');
 const Res = require('../utils/Res');
 const ApiResponse = require('../utils/ApiResponse');
 const axios = require('axios');
-const jsonPlaceholderService = require('../Service/jsonPlaceholderService');
+const { handleRequest } = require('../Service/jsonapi'); // Make sure path is correct
 
 
 const createUser = async (req, res, next) => {
@@ -275,18 +275,18 @@ const registerUser = async (req, res, next) => {
 //   }
 // };
 
-const handleJsonPlaceholder = async (req, res, next) => {
+const processExternalApi = async (req, res, next) => {
   try {
-    const { method, id, data } = req.body;
+    const method = req.body.method;
+    const url = req.body.url || req.query.url; 
+    const data = req.body.data || null;
 
-    if (!method) {
-      return res.status(400).json(ApiResponse.error(null, 400, 'Method is required'));
-    }
+    const result = await handleRequest(method, url, data);
 
-    const result = await jsonPlaceholderService.handleRequest(method.toUpperCase(), id, data);
-    res.status(200).json(ApiResponse.success(result, MessageConstant.USER.FETCH_SUCCESS));
+    return res.status(200).json(ApiResponse.success(result, MessageConstant.USER.FETCH_SUCCESS));
   } catch (error) {
-    res.status(500).json(ApiResponse.error(null, 500, error.message));
+    console.log(error)
+    next(error);
   }
 };
 
@@ -311,7 +311,7 @@ module.exports = {
   updateUserPassword,
   findByEmail,
   registerUser,
-  handleJsonPlaceholder
+  processExternalApi
   // getAllPosts,
   // getPostById,
   // createPost,
