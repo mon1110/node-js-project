@@ -291,7 +291,7 @@ paths:
   post:
     summary: Perform external API calls (GET, POST, PUT, DELETE)
     tags:
-      - External API
+      - FAKE API
     requestBody:
       required: true
       content:

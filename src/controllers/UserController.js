@@ -3,12 +3,12 @@ const User = require('../models');
 const menu = require('../models/menu');
 const MessageConstant = require("../constants/MessageConstant");
 const { BadRequestException } = require('../utils/errors');
-const {getTemplate} = require("../utils/mailTemplate");
+// const {getTemplate} = require("../utils/mailTemplate");
 const { sendToMailQueue } = require('../Service/rmqService');
 const Res = require('../utils/Res');
 const ApiResponse = require('../utils/ApiResponse');
 const axios = require('axios');
-const { handleRequest } = require('../Service/jsonapi'); // Make sure path is correct
+const { handleRequest } = require('../Service/jsonapi'); 
 
 
 const createUser = async (req, res, next) => {
@@ -277,12 +277,7 @@ const registerUser = async (req, res, next) => {
 
 const processExternalApi = async (req, res, next) => {
   try {
-    const method = req.body.method;
-    const url = req.body.url || req.query.url;
-    const data = req.body.data || null;
-
-    const result = await handleRequest(method, url, data);
-
+    const result = await handleRequest(req.body); 
     return Res.success(res, result, MessageConstant.USER.FETCH_SUCCESS);
   } catch (error) {
     console.error(error);

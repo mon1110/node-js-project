@@ -29,6 +29,7 @@ module.exports = {
     EMAIL_REQUIRED:"email required",
     BLOCKED:"user blocked try again leter",
     EXTERNAL_API_ERROR: 'External API Error',
+    URL_IS_REQUIRED: 'Url Required',
     invalidCredentialWithCount: (attempts, max) => `Invalid credentials. (${attempts}/${max})`,
     blockedWithTimer: (minutes) => `Account is blocked. Try again in ${minutes} minute(s).`
 

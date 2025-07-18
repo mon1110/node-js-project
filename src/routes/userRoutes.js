@@ -67,10 +67,6 @@ router.post("/save", userController.saveUser);
 //RMQ ke liye
 router.post('/registeraaa', userController.registerUser); 
 
-// router.get('/posts/:id', userController.getPostById);
-// router.post('/posts', userController.createPost);
-// router.put('/posts/:id', userController.updatePost);
-// router.delete('/posts/:id', userController.deletePost);
 
 
 //swagger
