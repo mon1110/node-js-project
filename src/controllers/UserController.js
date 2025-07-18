@@ -277,14 +277,13 @@ const registerUser = async (req, res, next) => {
 
 const processExternalApi = async (req, res, next) => {
   try {
-    const result = await handleRequest(req.body); 
+    const result = await handleRequest(req.body);
     return Res.success(res, result, MessageConstant.USER.FETCH_SUCCESS);
   } catch (error) {
-    console.error(error);
+    console.error('Final Error:', error.message);
     return Res.error(res, MessageConstant.USER.EXTERNAL_API_ERROR);
   }
 };
-
 
 
 module.exports = {
