@@ -278,17 +278,18 @@ const registerUser = async (req, res, next) => {
 const processExternalApi = async (req, res, next) => {
   try {
     const method = req.body.method;
-    const url = req.body.url || req.query.url; 
+    const url = req.body.url || req.query.url;
     const data = req.body.data || null;
 
     const result = await handleRequest(method, url, data);
 
-    return res.status(200).json(ApiResponse.success(result, MessageConstant.USER.FETCH_SUCCESS));
+    return Res.success(res, result, MessageConstant.USER.FETCH_SUCCESS);
   } catch (error) {
-    console.log(error)
-    next(error);
+    console.error(error);
+    return Res.error(res, MessageConstant.USER.EXTERNAL_API_ERROR);
   }
 };
+
 
 
 module.exports = {
