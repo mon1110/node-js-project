@@ -275,9 +275,25 @@ const registerUser = async (req, res, next) => {
 //   }
 // };
 
-const processExternalApi = async (req, res, next) => {
+// const processExternalApi = async (req, res, next) => {
+//   try {
+//     const result = await handleRequest(req.body?.url);
+//     return Res.success(res, result, MessageConstant.USER.FETCH_SUCCESS);
+//   } catch (error) {
+//     console.error('Final Error:', error.message);
+//     return Res.error(res, MessageConstant.USER.EXTERNAL_API_ERROR);
+//   }
+// };
+
+const processExternalApi = async (req, res) => {
   try {
-    const result = await handleRequest(req.body);
+    const { method, url, data } = req.body;
+
+    if (!method || !url) {
+      return Res.error(res, MessageConstant.USER.METHOD_AND_URL_REQUIRED);
+    }
+
+    const result = await handleRequest(method, url, data);
     return Res.success(res, result, MessageConstant.USER.FETCH_SUCCESS);
   } catch (error) {
     console.error('Final Error:', error.message);
