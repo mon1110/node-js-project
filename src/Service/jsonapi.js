@@ -7,10 +7,7 @@ const handleRequest = async (method, url, data = null, retries = 3) => {
   while (attempt < retries) {
     try {
       const config = {
-        method: method.toLowerCase(),
-        url,
-        data, // data will be ignored for GET/DELETE automatically
-      };
+        method: method.toLowerCase(),url,data,};
 
       const response = await axios(config);
       return response.data;
