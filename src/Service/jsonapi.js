@@ -7,17 +7,18 @@ const handleRequest = async (method, url, data = null, retries = 3) => {
   while (attempt < retries) {
     try {
       const config = {
-        method: method.toLowerCase(),url,data,};
+        method: method.toLowerCase(),url,data,timeout: 5000,  };
 
       const response = await axios(config);
       return response.data;
+
     } catch (error) {
       attempt++;
       console.log(`Attempt ${attempt} failed. Retrying...`);
 
       if (attempt === retries) {
         console.error(`All ${retries} attempts failed.`);
-        throw error;
+        throw new Error(MessageConstant.REQUEST.FAILED);
       }
     }
   }
