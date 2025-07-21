@@ -255,7 +255,6 @@ const sendWelcomeMailsToAllUsers = async () => {
     console.log('Payload being sent to queue:', mailPayload);
 
     await sendToMailQueue(mailPayload);
-    // console.log('Mail queued:', email, '-', name); 
 
   }
   };

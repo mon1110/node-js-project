@@ -214,67 +214,6 @@ const registerUser = async (req, res, next) => {
   }
 };
 
-
-
-
-
-// GET all
-// const getAllPosts = async (req, res, next) => {
-//   try {
-//     const response = await axios.get('https://jsonplaceholder.typicode.com/posts');
-//     return res.status(200).json(
-//       ApiResponse.success(response.data, MessageConstant.USER.FETCH_SUCCESS)
-//     );
-//   } catch (error) {
-//     console.log(error)
-//     return res.status(500).json(
-//       ApiResponse.error(null, 500, MessageConstant.USER.FETCH_FAILED)
-//     );
-//   }
-// };
-
-
-
-// // GET by ID
-// const getPostById = async (req, res, next) => {
-//   try {
-//     const post = await userService.fetchExternalPostById(req.params.id);
-//     res.status(200).json({ data: post });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
-
-// // CREATE
-// const createPost = async (req, res, next) => {
-//   try {
-//     const post = await userService.createExternalPost(req.body);
-//     res.status(201).json({ data: post });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
-
-// // UPDATE
-// const updatePost = async (req, res, next) => {
-//   try {
-//     const post = await userService.updateExternalPost(req.params.id, req.body);
-//     res.status(200).json({ data: post });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
-
-// // DELETE
-// const deletePost = async (req, res, next) => {
-//   try {
-//     await userService.deleteExternalPost(req.params.id);
-//     res.status(204).json({ message: "Deleted successfully" });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
-
 // const processExternalApi = async (req, res, next) => {
 //   try {
 //     const result = await handleRequest(req.body?.url);
@@ -323,9 +262,5 @@ module.exports = {
   findByEmail,
   registerUser,
   processExternalApi
-  // getAllPosts,
-  // getPostById,
-  // createPost,
-  // updatePost,
-  // deletePost
+  
 };
