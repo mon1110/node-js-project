@@ -30,7 +30,10 @@ sequelize.sync({ alter: true }).then(async () => {
     ]);
     console.log('Default settings inserted');
   }
+}).catch((err) => {
+  console.error('DB Sync error:', err);
 });
+
 
 // Import mail queue handlers from service
 const { connectQueue } = require('./src/Service/rmqService'); 

@@ -3,7 +3,6 @@ const User = require('../models');
 const menu = require('../models/menu');
 const MessageConstant = require("../constants/MessageConstant");
 const { BadRequestException } = require('../utils/errors');
-// const {getTemplate} = require("../utils/mailTemplate");
 const { sendToMailQueue } = require('../Service/rmqService');
 const Res = require('../utils/Res');
 const ApiResponse = require('../utils/ApiResponse');
