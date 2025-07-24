@@ -27,7 +27,7 @@ const User = db.define('users', {
     defaultValue: false,
   },
   menuIds: {
-    type: DataTypes.ARRAY(DataTypes.INTEGER), // required for GIN index
+    type: DataTypes.ARRAY(DataTypes.INTEGER), 
   },
   
   password: DataTypes.STRING,

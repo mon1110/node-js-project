@@ -7,8 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 // require('./src/schedules/loggerScheduler'); 
-require('./src/schedules/date'); 
-
+require('./src/schedules/date');
 
 // Importing packages
 const swaggerUi = require('swagger-ui-express');
@@ -16,27 +15,44 @@ const swaggerDocs = require('./src/config/swagger.config');
 const sequelize = require('./src/config/db.config');
 const Routes = require('./src/routes/index');
 const errorHandler = require('./src/middlewares/errorHandler');
-const { Settings } = require('./src/models'); 
-// const Routes = require('./src/routes/userRoutes');
+const { Settings } = require('./src/models');
 
-// const { Settings } = require('./src/models'); 
+// 🔹 Import models before sync to register indexes
+const UserModel = require('./src/models/User');
+require('./src/models/product'); // add other models as needed
 
-sequelize.sync({ alter: true }).then(async () => {
-  const count = await Settings.count();
-  if (count === 0) {
-    await Settings.bulkCreate([
-      { key: 'maxLoginAttempts', value: '5' },
-      { key: 'blockDurationMinutes', value: '5' },
-    ]);
-    console.log('Default settings inserted');
-  }
-}).catch((err) => {
-  console.error('DB Sync error:', err);
-});
+// Sync DB and Insert Default Settings
+sequelize.sync({ alter: true }) // use force: true only in development
+  .then(async () => {
+    console.log('All tables & indexes synced!');
 
+    // Insert default settings if not exist
+    const count = await Settings.count();
+    if (count === 0) {
+      await Settings.bulkCreate([
+        { key: 'maxLoginAttempts', value: '5' },
+        { key: 'blockDurationMinutes', value: '5' },
+      ]);
+      console.log(' Default settings inserted');
+    }
 
-// Import mail queue handlers from service
-const { connectQueue } = require('./src/Service/rmqService'); 
+    //unique index on email (isDeleted = false)
+    await sequelize.getQueryInterface().addIndex('users', {
+      fields: ['email'],
+      unique: true,
+      name: 'unique_email_not_soft_deleted',
+      where: {
+        softDelete: false
+        },
+    });
+    console.log('unique index added on email where isDeleted = false');
+  })
+  .catch((err) => {
+    console.error(' DB Sync error:', err);
+  });
+
+// Import RabbitMQ consumer
+const { connectQueue } = require('./src/Service/rmqService');
 
 // Initialize express app
 const app = express();
@@ -47,17 +63,15 @@ app.use(cors());
 // Middleware to parse request body
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/api', require('./src/routes/userRoutes'));
 
-// Swagger documentation
+// Routes
+app.use('/api', Routes);
+app.use('/users', require('./src/routes/userRoutes')); // user routes
+
+// Swagger docs
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// Sync database
-sequelize.sync({ alter: true })
-  .then(() => console.log('Database synced'))
-  .catch((err) => console.error(' DB Sync error:', err));
-
-// Auto-create folders if not present
+// Auto-create folders
 ['./data', './uploads', './files'].forEach(dir => {
   const fullPath = path.join(__dirname, dir);
   if (!fs.existsSync(fullPath)) {
@@ -65,11 +79,7 @@ sequelize.sync({ alter: true })
   }
 });
 
-// Route registration
-app.use('/api', Routes);
-app.use('/users', require('./src/routes/userRoutes')); // user routes
-
-// Error handler (keep this last)
+// Error handler (keep last)
 app.use(errorHandler);
 
 // Define PORT
@@ -77,12 +87,12 @@ const PORT = process.env.PORT || 8080;
 
 // Start Express + RabbitMQ consumer
 const startServer = async () => {
-  await connectQueue();     //  RabbitMQ connection
+  await connectQueue();
 };
 
 // Start server
 app.listen(PORT, () => {
   console.log(` Server running on http://localhost:${PORT}`);
   console.log(` Swagger docs at http://localhost:${PORT}/api-docs`);
-  startServer(); // Call after server starts
+  startServer();
 });
