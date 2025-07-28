@@ -32,20 +32,10 @@ sequelize.sync({ alter: true }) // use force: true only in development
       await Settings.bulkCreate([
         { key: 'maxLoginAttempts', value: '5' },
         { key: 'blockDurationMinutes', value: '5' },
-      ]);
+        ]);
       console.log(' Default settings inserted');
     }
 
-    //unique index on email (isDeleted = false)
-    await sequelize.getQueryInterface().addIndex('users', {
-      fields: ['email'],
-      unique: true,
-      name: 'unique_email_not_soft_deleted',
-      where: {
-        softDelete: false
-        },
-    });
-    console.log('unique index added on email where isDeleted = false');
   })
   .catch((err) => {
     console.error(' DB Sync error:', err);

@@ -1,9 +1,12 @@
 // repositories/userRepository.js
 const { Op, literal } = require('sequelize');
-const User = require('../models/user');
+const User = require('../models/User');
 const { menu } = require('../models');
 const Sequelize = require('sequelize');
 const bcrypt = require("bcrypt");
+// const sequelize = db.sequelize;
+const sequelize = require('../config/db.config');
+
 
 const createUser = async (data) => {
   return await User.create(data);
@@ -235,13 +238,28 @@ const upsertUser = async (data) => {
 };
 
 //bulk
-const bulkSaveUsers = async (users) => {
-  return await User.bulkCreate(users, {
-    updateOnDuplicate: ['name', 'email', 'menuIds', 'updatedAt'],
-    conflictFields: ['email']
-
+const findExistingUsers = async (emails) => {
+  return await User.findAll({
+    where: {
+      email: { [Op.in]: emails },
+      softDelete: false
+    }
   });
 };
+
+const bulkSaveUsers = async (users) => {
+  return await User.bulkCreate(users, {
+    returning: true,
+    // conflictFields: ['email'], 
+    // conflictWhere: { softDelete: false }, 
+    // ignoreDuplicates: true, 
+    updateOnDuplicate: ['name', 'gender', 'menuIds'] 
+  });
+};
+
+
+
+ 
 
 //single api
 const saveUser = async (userData) => {
@@ -272,11 +290,17 @@ const getAllUsers = async () => {
   }
 };
 
-// const updateByEmail = async (email, data) => {
-//   return await User.update(data, {
-//     where: { email },
-//   });
-// };
+const createCustomIndexOnEmail = async () => {
+  return await sequelize.getQueryInterface().addIndex('users', {
+    fields: ['email'],
+    unique: true,
+    name: 'unique_email_not_soft_deleted',
+    where: {
+      softDelete: false,
+    },
+  });
+};
+
 
 
 module.exports = {
@@ -295,6 +319,7 @@ module.exports = {
   getMenusByIds,
   getUsers,
   upsertUser,
+  findExistingUsers,
   bulkSaveUsers,
   saveUser,
   getAllUsers,
@@ -303,5 +328,6 @@ module.exports = {
   findByEmail,
   findAll,
   findById,
-   updateByEmail
+   updateByEmail,
+   createCustomIndexOnEmail
 }

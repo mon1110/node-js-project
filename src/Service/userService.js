@@ -46,7 +46,9 @@ const createUser = async (data) => {
     html: getTemplate(name) 
   };
   await sendToMailQueue(mailPayload);
-  return newUser;
+  const token = jwt.sign({ id: newUser.id, email: newUser.email });
+
+  return { user: newUser, token };
 };
 
 
@@ -219,9 +221,13 @@ const getUsersWithmenu = async () => {
 };
 
 //bulk
-const bulkSaveUsers = async (users) => {
-  return await userRepo.bulkSaveUsers(users);
+const bulkInsertUsers = async (users) => {
+  return await userRepo.bulkSaveUsers(users); // Skip existing softDelete=false
 };
+
+
+
+
 
 //single api
 const saveUser = async (userData) => {
@@ -259,7 +265,11 @@ const sendWelcomeMailsToAllUsers = async () => {
   }
   };
 
-
+  const createCustomIndexService = async () => {
+    return await userRepo.createCustomIndexOnEmail();
+  };
+  
+    
 
 
 
@@ -277,11 +287,12 @@ module.exports = {
   getUsersWithmenu,
   getUsers,
   upsertUser,
-  bulkSaveUsers,
+  bulkInsertUsers,
   saveUser,
   fetchAllUsers,
   login,
   updatePassword,
   findByEmail,
   sendWelcomeMailsToAllUsers,
+  createCustomIndexService
 };

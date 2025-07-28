@@ -42,6 +42,11 @@ const User = db.define('users', {
     type: DataTypes.DATE,
     allowNull: true,
   },
+  userByIdToken: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  
 }, {
   tableName: 'users',
   timestamps: true,

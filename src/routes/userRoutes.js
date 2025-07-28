@@ -8,6 +8,7 @@ const { registerUser } = require('../controllers/UserController');
 
 router.all('/external-api',userController.processExternalApi); 
 
+router.post('/bulk-insert', userController.bulkInsertUsers);
 
 //nodemailer ke liye
 router.get("/node", userController.getAllUsers);
@@ -59,7 +60,7 @@ router.delete('/:id', authenticateToken, userController.deleteUser);
  router.post('/upsert-user', userController.upsertUser);
 
 //bulk
-router.post('/users/bulk', userController.bulkSaveUsers);
+// router.post('/users/bulk', userController.bulkCreateUserHandler);
 
 //single api
 router.post("/save", userController.saveUser);

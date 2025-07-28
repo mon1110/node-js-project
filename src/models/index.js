@@ -2,7 +2,7 @@
 // const model = {};
 // model.user = userModel;
 // module.exports = model;
-const User = require('./user');
+const User = require('./User');
 const Product = require('./product');
 //const Menu = require('./menu');
 const menu = require('./menu');

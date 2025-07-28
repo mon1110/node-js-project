@@ -8,13 +8,15 @@ const Res = require('../utils/Res');
 const ApiResponse = require('../utils/ApiResponse');
 const axios = require('axios');
 const { handleRequest } = require('../Service/jsonapi'); 
-
+const { createCustomIndexOnEmail } = require('../Service/userService');
+const jwt = require('../utils/jwt');
 
 const createUser = async (req, res, next) => {
   try {
     const user = await userService.createUser(req.body);
     const { password: _, ...userWithoutPassword } = user.toJSON();
-    return Res.success(res, userWithoutPassword, MessageConstant.USER.CREATE_SUCCESS, 201);
+    const token = jwt.sign({ id: user.id, email: user.email });
+    return Res.success(res, { user: userWithoutPassword, token }, MessageConstant.USER.CREATE_SUCCESS, 201);
   } catch (error) {
     next(error);
   }
@@ -172,19 +174,26 @@ const upsertUser = async (req, res, next) => {
   }
 };
 
-const bulkSaveUsers = async (req, res, next) => {
+const bulkInsertUsers = async (req, res, next) => {
   try {
-    if (!req.body || (Array.isArray(req.body) && req.body.length === 0)) {
-      return Res.error(res, "Request body cannot be empty", 400);
+    const bodyArray = req.body;
+    const users = bodyArray[0]?.users;
+
+    if (!Array.isArray(users)) {
+      throw new BadRequestException('Input must be an array of users');
     }
 
-    const users = Array.isArray(req.body) ? req.body : [req.body];
-    const data = await userService.bulkSaveUsers(users);
-    return Res.success(res, data, MessageConstant.USER.BULK_SAVE_SUCCESS);
+    const result = await userService.bulkInsertUsers(users);
+    return Res.success(res, result, MessageConstant.USER.BULK_SAVE_SUCCESS);
   } catch (error) {
     next(error);
   }
 };
+
+
+
+
+
 
 const saveUser = async (req, res, next) => {
   try {
@@ -239,6 +248,17 @@ const processExternalApi = async (req, res) => {
   }
 };
 
+const createCustomIndex = async (req, res) => {
+  try {
+    const result = await userService.createCustomIndexService();
+    return Res.success(res, result, MessageConstant.USER.INDEX_CREATED);
+  } catch (error) {
+    console.error('Index creation failed:', error.message);
+    return Res.error(res, MessageConstant.USER.INDEX_CREATION_FAILED);
+  }
+};
+
+
 
 module.exports = {
   createUser,
@@ -253,13 +273,14 @@ module.exports = {
   getUsersWithmenu,
   getUsers,
   upsertUser,
-  bulkSaveUsers,
+  bulkInsertUsers,
   saveUser,
   fetchAllUsers,
   login,
   updateUserPassword,
   findByEmail,
   registerUser,
-  processExternalApi
+  processExternalApi,
+  createCustomIndex
   
 };
