@@ -17,7 +17,7 @@ const { scheduleUserUnblock } = require('./schedulerService');
 
 
 
-const createUser = async (data) => {
+const createUser = async (data,userByIdToken) => {
   const { name, email, menuIds, password, gender } = data;
 
   if (!name || !email || !menuIds || !password || !gender) {
@@ -36,20 +36,25 @@ const createUser = async (data) => {
     email: email.toLowerCase(),
     menuIds,
     password: hashedPassword,
-    gender
+    gender,
+    userByIdToken  // yaha save hoga token user ka ID
   });
 
-  // Send welcome email using queue
-  const mailPayload = {
-    to: email,
-    subject: 'Welcome to Our App!',
-    html: getTemplate(name) 
-  };
-  await sendToMailQueue(mailPayload);
-  const token = jwt.sign({ id: newUser.id, email: newUser.email });
+  const token = jwt.sign(
+    { id: newUser.id, email: newUser.email },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
+  );
 
   return { user: newUser, token };
 };
+
+//tokan se record through krne k liye
+const getRecordsByUser = async (userByIdToken) => {
+  const records = await userRepo.findAll(userByIdToken);
+  return records;
+};
+
 
 
 //use for password block/ unblock 
@@ -275,6 +280,7 @@ const sendWelcomeMailsToAllUsers = async () => {
 
 module.exports = {
   createUser,
+  getRecordsByUser,
   getAllUsers,
   getUserById,
   updateUser,

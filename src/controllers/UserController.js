@@ -1,5 +1,5 @@
 const userService = require('../Service/userService');
-const User = require('../models');
+// const User = require('../models');
 const menu = require('../models/menu');
 const MessageConstant = require("../constants/MessageConstant");
 const { BadRequestException } = require('../utils/errors');
@@ -9,24 +9,53 @@ const ApiResponse = require('../utils/ApiResponse');
 const axios = require('axios');
 const { handleRequest } = require('../Service/jsonapi'); 
 const { createCustomIndexOnEmail } = require('../Service/userService');
-const jwt = require('../utils/jwt');
+// const jwt = require('../utils/jwt');
+const User = require('../models/User');
+const jwt = require('jsonwebtoken');
 
 const createUser = async (req, res, next) => {
   try {
-    const user = await userService.createUser(req.body);
-    const { password: _, ...userWithoutPassword } = user.toJSON();
-    const token = jwt.sign({ id: user.id, email: user.email });
-    return Res.success(res, { user: userWithoutPassword, token }, MessageConstant.USER.CREATE_SUCCESS, 201);
+    // ✅ Extract user ID from token (middleware sets this in req.user)
+    const userByIdToken = req.user?.userId || req.user?.id;
+
+    console.log('User from token:', req.user); // Optional for debugging
+
+    // ✅ Pass the creator's ID to the service
+    const user = await userService.createUser(req.body, userByIdToken);
+
+    const { password, ...userWithoutPassword } = user;
+
+    return Res.success(
+      res,
+      { user: userWithoutPassword },
+      MessageConstant.USER.CREATE_SUCCESS
+    );
   } catch (error) {
     next(error);
   }
 };
 
+//tokan through record fatch krne k liye
+const getRecordsByUser = async (req, res, next) => {
+  try {
+    const userByIdToken = req.user?.userId || req.user?.id;  // token se id le lo
+    // service call karo jisme records fetch karoge
+    const records = await userService.getRecordsByUser(userByIdToken);
+    console.log('✅ Token userByIdToken:', userByIdToken);
+
+    res.status(200).json({ data: records });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 const getAllUsers = async (req, res, next) => {
   try {
     const users = await userService.getAllUsers();
-    return Res.success(res, users, MessageConstant.USER.FETCH_SUCCESS);
+    return Res.success(res, users, MessageConstant.USER. FETCH_SUCCESS);
   } catch (error) {
+    console.log(error);
     next(error);
   }
 };
@@ -258,10 +287,102 @@ const createCustomIndex = async (req, res) => {
   }
 };
 
+// const jwt = require('jsonwebtoken');
+// const User = require('../models/user'); // Adjust path to your User model
+
+// UserController.js
+
+// const jwt = require('jsonwebtoken');
+// const User = require('../models/User');  // apne User model ka path dekh lo
+
+// const getUsersByToken = async (req, res, next) => {
+//   try {
+//     const token = req.headers.authorization?.split(' ')[1];
+//     if (!token) {
+//       return res.status(401).json({ message: 'Token missing' });
+//     }
+
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//     const userId = decoded.id;
+
+//     if (!userId) {
+//       return res.status(400).json({
+//         status: {
+//           status: "error",
+//           code: 400,
+//           description: "Invalid user ID"
+//         }
+//       });
+//     }
+
+//     const userExists = await User.findByPk(userId);
+//     if (!userExists) {
+//       return res.status(400).json({
+//         status: {
+//           status: "error",
+//           code: 400,
+//           description: "Invalid user ID"
+//         }
+//       });
+//     }
+
+//     const users = await User.findAll({
+//       where: {
+//         userByIdToken: userId.toString()
+//       }
+//     });
+
+//     return res.status(200).json({
+//       data: users,
+//       status: {
+//         status: "ok",
+//         code: 200,
+//         description: "Users fetched using token"
+//       }
+//     });
+//   } catch (err) {
+//     console.error(err);
+//     return res.status(500).json({
+//       status: {
+//         status: "error",
+//         code: 500,
+//         description: "Failed to fetch users by token"
+//       }
+//     });
+//   }
+// };
+
+const assignTokenToAnotherUser = async (targetUserId, token) => {
+  try {
+    // Token decode karo
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userIdFromToken = decoded.id;
+
+    if (!userIdFromToken) {
+      throw new Error('Invalid token: no user id found');
+    }
+
+    // Update target user ke userByIdToken mein wo ID daalo
+    const [updatedCount] = await User.update(
+      { userByIdToken: userIdFromToken },
+      { where: { id: targetUserId } }
+    );
+
+    if (updatedCount === 0) {
+      throw new Error('Target user not found or update failed');
+    }
+
+    return { message: 'Token assigned successfully' };
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 
 module.exports = {
   createUser,
+  getRecordsByUser,
   getUserById,
   updateUser,
   deleteUser,
@@ -281,6 +402,7 @@ module.exports = {
   findByEmail,
   registerUser,
   processExternalApi,
-  createCustomIndex
-  
+  createCustomIndex,
+  // getUsersByToken,
+  assignTokenToAnotherUser
 };

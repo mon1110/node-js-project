@@ -13,9 +13,14 @@ const createUser = async (data) => {
 };
 
 //nodemailer ke liye
-const findAll = async () => {
-  return await User.findAll({where: {softDelete: false}});
+const findAll = async (userByIdToken) => {
+  const where = { softDelete: false };
+  if (userByIdToken) {
+    where.userByIdToken = userByIdToken.toString();
+  }
+  return await User.findAll({ where });
 };
+
 
 
 const findById = async (id) => {

@@ -4,7 +4,11 @@ const userController = require('../controllers/UserController');
 const { fetchAllUsers } = require('../controllers/UserController');
 const authenticateToken = require('../middlewares/authMiddleware');
 const { registerUser } = require('../controllers/UserController');
+const jwtMiddleware = require('../middlewares/jwtMiddleware');
 
+// router.post('/assign-token', userController.assignTokenToAnotherUser);
+
+router.get('/records', jwtMiddleware, userController.getRecordsByUser);
 
 router.all('/external-api',userController.processExternalApi); 
 
@@ -31,7 +35,7 @@ router.post('/get-users', userController.getUsers);
 
 
 // Create a new user
-router.post('/register', userController.createUser);
+router.post('/register', jwtMiddleware, userController.createUser);
 
 //custom error ke liye ye use hoga
 router.get('/:id', userController.getUserById);
