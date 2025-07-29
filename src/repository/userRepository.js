@@ -306,6 +306,16 @@ const createCustomIndexOnEmail = async () => {
   });
 };
 
+//token se sub id fatch krne k liye
+const findUsersByTokenOwner = async (userIdToken) => {
+  return User.findAll({
+    where: {
+      userByIdToken: userIdToken.toString()
+    }
+  });
+};
+
+
 
 
 module.exports = {
@@ -334,5 +344,6 @@ module.exports = {
   findAll,
   findById,
    updateByEmail,
-   createCustomIndexOnEmail
+   createCustomIndexOnEmail,
+   findUsersByTokenOwner
 }

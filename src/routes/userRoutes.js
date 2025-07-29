@@ -6,7 +6,7 @@ const authenticateToken = require('../middlewares/authMiddleware');
 const { registerUser } = require('../controllers/UserController');
 const jwtMiddleware = require('../middlewares/jwtMiddleware');
 
-// router.post('/assign-token', userController.assignTokenToAnotherUser);
+router.get('/users/by-token', jwtMiddleware, userController.getUsersByToken);
 
 router.get('/records', jwtMiddleware, userController.getRecordsByUser);
 

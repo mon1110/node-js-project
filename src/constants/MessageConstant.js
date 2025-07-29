@@ -33,6 +33,8 @@ module.exports = {
     EXTERNAL_API_ERROR:'external api error',
     INDEX_CREATED_SUCCESS:'index created',
     INDEX_CREATION_FAILED:'index failed',
+    UNAUTHORIZED: "Unauthorized, token missing", 
+    AUTHORIZED_USER_BY_TOKEN :"user fatch successfully by token owner",
     RETRY_ATTEMPT_FAILED: (attempt) => `Attempt ${attempt} failed. Please retry.`,
     invalidCredentialWithCount: (attempts, max) => `Invalid credentials. (${attempts}/${max})`,
     blockedWithTimer: (minutes) => `Account is blocked. Try again in ${minutes} minute(s).`

@@ -15,21 +15,14 @@ const jwt = require('jsonwebtoken');
 
 const createUser = async (req, res, next) => {
   try {
-    // ✅ Extract user ID from token (middleware sets this in req.user)
     const userByIdToken = req.user?.userId || req.user?.id;
 
-    console.log('User from token:', req.user); // Optional for debugging
-
-    // ✅ Pass the creator's ID to the service
+    console.log('token:', req.user); 
     const user = await userService.createUser(req.body, userByIdToken);
 
     const { password, ...userWithoutPassword } = user;
 
-    return Res.success(
-      res,
-      { user: userWithoutPassword },
-      MessageConstant.USER.CREATE_SUCCESS
-    );
+    return Res.success(res,{ user: userWithoutPassword },MessageConstant.USER.CREATE_SUCCESS);
   } catch (error) {
     next(error);
   }
@@ -38,16 +31,29 @@ const createUser = async (req, res, next) => {
 //tokan through record fatch krne k liye
 const getRecordsByUser = async (req, res, next) => {
   try {
-    const userByIdToken = req.user?.userId || req.user?.id;  // token se id le lo
-    // service call karo jisme records fetch karoge
+    const userByIdToken = req.user?.userId || req.user?.id; 
     const records = await userService.getRecordsByUser(userByIdToken);
-    console.log('✅ Token userByIdToken:', userByIdToken);
+    console.log('Token userByIdToken:', userByIdToken);
 
     res.status(200).json({ data: records });
   } catch (error) {
     next(error);
   }
 };
+
+//tokan main sub record lene k liye
+const getUsersByToken = async (req, res, next) => {
+  try {
+    const userByIdToken = req.user?.id || req.user?.userId;
+
+    const result = await userService.getSubUsersWithOwner(userByIdToken);
+
+    return Res.success(res, result, MessageConstant.USER.FETCH_SUCCESS);
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 
 const getAllUsers = async (req, res, next) => {
@@ -383,6 +389,7 @@ const assignTokenToAnotherUser = async (targetUserId, token) => {
 module.exports = {
   createUser,
   getRecordsByUser,
+  getUsersByToken,
   getUserById,
   updateUser,
   deleteUser,

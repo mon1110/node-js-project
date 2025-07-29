@@ -274,6 +274,26 @@ const sendWelcomeMailsToAllUsers = async () => {
     return await userRepo.createCustomIndexOnEmail();
   };
   
+  //token se sub id fatch krne k liye
+  const getSubUsersWithOwner = async (userByIdToken) => {
+    const subUsers = await User.findAll({
+      where: {
+        userByIdToken: userByIdToken.toString(),
+        softDelete: false
+      },
+      attributes: { exclude: ['password'] }
+    });
+  
+    const ownerUser = await User.findByPk(userByIdToken, {
+      attributes: ['id', 'name', 'email', 'gender']
+    });
+  
+    return {
+      user: ownerUser,
+      subUsers
+    };
+  };
+  
     
 
 
@@ -300,5 +320,9 @@ module.exports = {
   updatePassword,
   findByEmail,
   sendWelcomeMailsToAllUsers,
-  createCustomIndexService
+  createCustomIndexService,
+  getSubUsersWithOwner
 };
+
+
+// [{id:40, ...., subUsers:[{},{},{},]}]
