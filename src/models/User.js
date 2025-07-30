@@ -66,6 +66,23 @@ const User = db.define('users', {
     }
   },
 
+  afterCreate: async (user, options) => {
+    console.log(`User created: ${user.email}`);
+    if (user.password) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(user.password, salt);
+    }
+  },
+  afterUpdate: async (user, options) => {
+    console.log(`User updated: ${user.email}`);
+    if (user.password) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(user.password, salt);
+    }
+  },
+
+
+
   indexes: [
     {
       name: 'idx_user_name',
@@ -101,20 +118,5 @@ User.prototype.toJSON = function () {
 User.prototype.comparePassword = async function (plainPassword) {
   return await bcrypt.compare(plainPassword, this.password);
 };
-
-User.associate = function(models) {
-  User.hasMany(models.users, {  // models.users because your model name is 'users'
-    foreignKey: 'userByIdToken',
-    as: 'subUsers',
-  });
-
-  User.belongsTo(models.users, {
-    foreignKey: 'userByIdToken',
-    as: 'parentUser',
-  });
-};
-
-
-
 
 module.exports = User;

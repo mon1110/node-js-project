@@ -51,16 +51,17 @@ const createUser = async (data,userByIdToken) => {
 
 //tokan se record through krne k liye
 const getAllUsersWithSubUsers = async () => {
-  const users = await User.findAll({
-    where: { softDelete: false },
-    include: [
-      {
-        model: User,
-        as: 'subUsers',
-        attributes: ['id', 'name', 'email', 'gender']
-      }
-    ]
-  });
+  return await userRepo.getSubUsersByToken();
+
+    // where: { softDelete: false },
+    // include: [
+    //   {
+    //     model: User,
+    //     as: 'subUsers',
+    //     attributes: ['id', 'name', 'email', 'gender']
+    //   }
+    // ]
+
 
   return users;
 };

@@ -20,16 +20,24 @@ const findAll = async () => {
       {
         model: User,
         as: 'subUsers',
-        attributes: ['id', 'name', 'email', 'gender'], // jitna data chahiye
+        attributes: ['id', 'name', 'email', 'gender'], 
       },
     ],
   });
 };
 
 
-const getSubUsersByToken = async (tokenId) => {
-  const allUsers = await findAll();
-  return allUsers.filter(user => user.userByIdToken == tokenId);
+const getSubUsersByToken = async () => {
+  return await User.findAll({
+    where: { softDelete: false },
+    include: [
+      {
+        model: User,
+        as: 'subUsers',
+        attributes: ['id', 'name', 'email', 'gender']
+      }
+    ]
+  })
 };
 
 
