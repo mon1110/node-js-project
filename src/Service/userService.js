@@ -50,10 +50,24 @@ const createUser = async (data,userByIdToken) => {
 };
 
 //tokan se record through krne k liye
-const getRecordsByUser = async (userByIdToken) => {
-  const records = await userRepo.findAll(userByIdToken);
-  return records;
+const getAllUsersWithSubUsers = async () => {
+  const users = await User.findAll({
+    where: { softDelete: false },
+    include: [
+      {
+        model: User,
+        as: 'subUsers',
+        attributes: ['id', 'name', 'email', 'gender']
+      }
+    ]
+  });
+
+  return users;
 };
+
+// const findAll = async () => {
+//   return await userRepo.findAll(); 
+// };
 
 
 
@@ -275,24 +289,24 @@ const sendWelcomeMailsToAllUsers = async () => {
   };
   
   //token se sub id fatch krne k liye
-  const getSubUsersWithOwner = async (userByIdToken) => {
-    const subUsers = await User.findAll({
-      where: {
-        userByIdToken: userByIdToken.toString(),
-        softDelete: false
-      },
-      attributes: { exclude: ['password'] }
-    });
+  // const getSubUsersWithOwner = async (userByIdToken) => {
+  //   const subUsers = await User.findAll({
+  //     where: {
+  //       userByIdToken: userByIdToken.toString(),
+  //       softDelete: false
+  //     },
+  //     attributes: { exclude: ['password'] }
+  //   });
   
-    const ownerUser = await User.findByPk(userByIdToken, {
-      attributes: ['id', 'name', 'email', 'gender']
-    });
+  //   const ownerUser = await User.findByPk(userByIdToken, {
+  //     attributes: ['id', 'name', 'email', 'gender']
+  //   });
   
-    return {
-      user: ownerUser,
-      subUsers
-    };
-  };
+  //   return {
+  //     user: ownerUser,
+  //     subUsers
+  //   };
+  // };
   
     
 
@@ -300,7 +314,7 @@ const sendWelcomeMailsToAllUsers = async () => {
 
 module.exports = {
   createUser,
-  getRecordsByUser,
+  getAllUsersWithSubUsers,
   getAllUsers,
   getUserById,
   updateUser,
@@ -321,7 +335,7 @@ module.exports = {
   findByEmail,
   sendWelcomeMailsToAllUsers,
   createCustomIndexService,
-  getSubUsersWithOwner
+  // getSubUsersWithOwner
 };
 
 

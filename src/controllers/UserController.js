@@ -29,30 +29,32 @@ const createUser = async (req, res, next) => {
 };
 
 //tokan through record fatch krne k liye
-const getRecordsByUser = async (req, res, next) => {
+const getAllUserss = async (req, res, next) => {
   try {
-    const userByIdToken = req.user?.userId || req.user?.id; 
-    const records = await userService.getRecordsByUser(userByIdToken);
-    console.log('Token userByIdToken:', userByIdToken);
-
-    res.status(200).json({ data: records });
-  } catch (error) {
-    next(error);
+    const users = await userService.getAllUsersWithSubUsers();
+    return Res.success(res, users, MessageConstant.USER.FETCH_SUCCESS);
+  } catch (err) {
+    console.log(err);
+    next(err);
   }
 };
+
+
+
+
 
 //tokan main sub record lene k liye
-const getUsersByToken = async (req, res, next) => {
-  try {
-    const userByIdToken = req.user?.id || req.user?.userId;
+// const getUsersByToken = async (req, res, next) => {
+//   try {
+//     const userByIdToken = req.user?.id || req.user?.userId;
 
-    const result = await userService.getSubUsersWithOwner(userByIdToken);
+//     const result = await userService.getSubUsersWithOwner(userByIdToken);
 
-    return Res.success(res, result, MessageConstant.USER.FETCH_SUCCESS);
-  } catch (error) {
-    next(error);
-  }
-};
+//     return Res.success(res, result, MessageConstant.USER.FETCH_SUCCESS);
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 
 
@@ -183,20 +185,32 @@ const getUsersWithmenu = async (req, res, next) => {
   }
 };
 
-const getUsers = async (req, res, next) => {
-  try {
-    const result = await userService.getUsers(req.body);
-    const data = {
-      content: result.data,
-      totalItems: result.totalItems,
-      totalPages: result.totalPages,
-      currentPage: result.currentPage,
-      pageLimit: result.pageLimit,
-    };
-    return Res.success(res, data, MessageConstant.USER.PAGINATION_SUCCESS);
-  } catch (error) {
-    next(error);
-  }
+const getUsers = async (params) => {
+  const page = params.page || 1;
+  const limit = params.limit || 10;
+  const offset = (page - 1) * limit;
+
+  // Sequelize findAndCountAll with tokens included
+  const result = await User.findAndCountAll({
+    where: { softDelete: false },
+    include: [
+      {
+        model: Token,
+        attributes: ['id', 'name', 'email'], 
+        required: false,
+      },
+    ],
+    limit,
+    offset,
+  });
+
+  return {
+    data: result.rows,
+    totalItems: result.count,
+    totalPages: Math.ceil(result.count / limit),
+    currentPage: page,
+    pageLimit: limit,
+  };
 };
 
 const upsertUser = async (req, res, next) => {
@@ -388,8 +402,8 @@ const assignTokenToAnotherUser = async (targetUserId, token) => {
 
 module.exports = {
   createUser,
-  getRecordsByUser,
-  getUsersByToken,
+  getAllUserss,
+  // getUsersByToken,
   getUserById,
   updateUser,
   deleteUser,

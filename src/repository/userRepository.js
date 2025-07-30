@@ -1,7 +1,7 @@
 // repositories/userRepository.js
 const { Op, literal } = require('sequelize');
 const User = require('../models/User');
-const { menu } = require('../models');
+const { menu } = require('../models/menu');
 const Sequelize = require('sequelize');
 const bcrypt = require("bcrypt");
 // const sequelize = db.sequelize;
@@ -13,14 +13,24 @@ const createUser = async (data) => {
 };
 
 //nodemailer ke liye
-const findAll = async (userByIdToken) => {
-  const where = { softDelete: false };
-  if (userByIdToken) {
-    where.userByIdToken = userByIdToken.toString();
-  }
-  return await User.findAll({ where });
+const findAll = async () => {
+  return await User.findAll({
+    where: { softDelete: false },
+    include: [
+      {
+        model: User,
+        as: 'subUsers',
+        attributes: ['id', 'name', 'email', 'gender'], // jitna data chahiye
+      },
+    ],
+  });
 };
 
+
+const getSubUsersByToken = async (tokenId) => {
+  const allUsers = await findAll();
+  return allUsers.filter(user => user.userByIdToken == tokenId);
+};
 
 
 const findById = async (id) => {
@@ -307,13 +317,13 @@ const createCustomIndexOnEmail = async () => {
 };
 
 //token se sub id fatch krne k liye
-const findUsersByTokenOwner = async (userIdToken) => {
-  return User.findAll({
-    where: {
-      userByIdToken: userIdToken.toString()
-    }
-  });
-};
+// const findUsersByTokenOwner = async (userIdToken) => {
+//   return User.findAll({
+//     where: {
+//       userByIdToken: userIdToken.toString()
+//     }
+//   });
+// };
 
 
 
@@ -342,8 +352,9 @@ module.exports = {
   updatePassword,
   findByEmail,
   findAll,
+  getSubUsersByToken,
   findById,
    updateByEmail,
    createCustomIndexOnEmail,
-   findUsersByTokenOwner
+  //  findUsersByTokenOwner
 }

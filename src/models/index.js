@@ -1,27 +1,35 @@
-// const userModel = require("./user");
-// const model = {};
-// model.user = userModel;
-// module.exports = model;
 const User = require('./User');
 const Product = require('./product');
-//const Menu = require('./menu');
 const menu = require('./menu');
-const Settings = require('./Settings'); 
-// db.Settings = Settings;
+const Settings = require('./Settings');
 
-
-// User.belongsToMany(Menu, { through: 'UserMenus', foreignKey: 'userId' });
-// Menu.belongsToMany(User, { through: 'UserMenus', foreignKey: 'menuId' });
-
+// Association setup
 User.hasMany(Product, { foreignKey: 'userId' });
 Product.belongsTo(User, { foreignKey: 'userId' });
 
+User.hasMany(menu, { foreignKey: 'id', as: 'menu' });
 
+// Sub-user association (self-referencing)
+User.associate = function (models) {
+  User.hasMany(models.User, {
+    foreignKey: 'userByIdToken',
+    as: 'subUsers',
+  });
 
-// User.hasMany(menu, { foreignKey: 'menuIds',  as: 'menu'    
-// });
-User.hasMany(menu, { foreignKey: 'id',  as: 'menu' }); 
+  User.belongsTo(models.User, {
+    foreignKey: 'userByIdToken',
+    as: 'parentUser',
+  });
+};
 
-module.exports = { User, Product, menu , Settings};
+// Prepare db object
+const db = {User,  Product,  menu,  Settings,};
 
+// Call associate methods
+Object.values(db).forEach(model => {
+  if (model.associate) {
+    model.associate(db);
+  }
+});
 
+module.exports = db;

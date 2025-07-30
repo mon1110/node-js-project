@@ -43,7 +43,7 @@ const User = db.define('users', {
     allowNull: true,
   },
   userByIdToken: {
-    type: DataTypes.STRING,
+    type: DataTypes.INTEGER,
     allowNull: true
   },
   
@@ -101,5 +101,20 @@ User.prototype.toJSON = function () {
 User.prototype.comparePassword = async function (plainPassword) {
   return await bcrypt.compare(plainPassword, this.password);
 };
+
+User.associate = function(models) {
+  User.hasMany(models.users, {  // models.users because your model name is 'users'
+    foreignKey: 'userByIdToken',
+    as: 'subUsers',
+  });
+
+  User.belongsTo(models.users, {
+    foreignKey: 'userByIdToken',
+    as: 'parentUser',
+  });
+};
+
+
+
 
 module.exports = User;

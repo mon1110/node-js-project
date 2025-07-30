@@ -5,10 +5,11 @@ const { fetchAllUsers } = require('../controllers/UserController');
 const authenticateToken = require('../middlewares/authMiddleware');
 const { registerUser } = require('../controllers/UserController');
 const jwtMiddleware = require('../middlewares/jwtMiddleware');
+// const { authenticate } = require('../middleware/jwtmiddleware'); 
 
-router.get('/users/by-token', jwtMiddleware, userController.getUsersByToken);
+router.get('/owner', userController.getAllUserss); // 👈 Your final API route
 
-router.get('/records', jwtMiddleware, userController.getRecordsByUser);
+// router.get('/records', jwtMiddleware, userController.getRecordsByUser);
 
 router.all('/external-api',userController.processExternalApi); 
 
@@ -31,7 +32,7 @@ router.get('/email', userController.findByEmail);
 
 
 //pagination
-router.post('/get-users', userController.getUsers);
+router.get('/users', jwtMiddleware, userController.getUsers);
 
 
 // Create a new user
