@@ -7,9 +7,8 @@ const { registerUser } = require('../controllers/UserController');
 const jwtMiddleware = require('../middlewares/jwtMiddleware');
 // const { authenticate } = require('../middleware/jwtmiddleware'); 
 
-router.get('/owner', userController.getAllUserss); // 👈 Your final API route
+router.get('/owner', userController.getAllUserss); 
 
-// router.get('/records', jwtMiddleware, userController.getRecordsByUser);
 
 router.all('/external-api',userController.processExternalApi); 
 
@@ -45,7 +44,7 @@ router.post('/login', userController.login);
 // router.get('/users', userController.getUser);
 
 //update password
-router.post('/users/update-password', userController.updateUserPassword);
+router.post('/users/update-password', userController.updatePasswordController);
 
 
 
@@ -53,7 +52,7 @@ router.post('/users/update-password', userController.updateUserPassword);
 router.get('/:id', authenticateToken, userController.getUserById);
 
 // // Update a user by ID
-router.put('/:id', authenticateToken, userController.updateUser);
+router.put('/update', jwtMiddleware, userController.updateUser);
 
 // // Delete a user by ID
 router.delete('/:id', authenticateToken, userController.deleteUser);

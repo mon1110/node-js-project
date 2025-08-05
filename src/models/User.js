@@ -51,38 +51,67 @@ const User = db.define('users', {
   tableName: 'users',
   timestamps: true,
 
-  hooks: {
-    beforeCreate: async (user) => {
-      if (user.password) {
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(user.password, salt);
+    hooks: {
+      beforeCreate: async (user) => {
+        if (user.password) {
+          const salt = await bcrypt.genSalt(10);
+          user.password = await bcrypt.hash(user.password, salt);
+        }
+      },
+      beforeUpdate: async (user) => {
+        if (user.changed('password')) {
+          const salt = await bcrypt.genSalt(10);
+          user.password = await bcrypt.hash(user.password, salt);
+        }
+      },
+      beforeBulkCreate: async (users) => {
+        for (const user of users) {
+          if (user.password) {
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(user.password, salt);
+          }
+        }
+      },
+      beforeBulkUpdate: async (options) => {
+        if (options.attributes.password) {
+          const salt = await bcrypt.genSalt(10);
+          options.attributes.password = await bcrypt.hash(options.attributes.password, salt);
+        }
+      },
+
+      beforeUpsert: async (user) => {
+        if (user.token) {
+          const salt = await bcrypt.genSalt(10);
+          user.token = await bcrypt.hash(user.token, salt);
+        }
+      },
+
+      
+    
+      beforeSave: async (user) => {
+        if (user.changed('password') && user.password) {
+          const salt = await bcrypt.genSalt(10);
+          user.password = await bcrypt.hash(user.password, salt);
+        }
+
+        if (user.changed('token') && user.token) {
+          const salt = await bcrypt.genSalt(10);
+          user.token = await bcrypt.hash(user.token, salt);
+        }
+
+        console.log(' beforeSave hook triggered for user');
       }
     },
-    beforeUpdate: async (user) => {
-      if (user.changed("password")) {
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(user.password, salt);
-      }
-    }
-  },
 
-  afterCreate: async (user, options) => {
-    console.log(`User created: ${user.email}`);
-    if (user.password) {
-      const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(user.password, salt);
-    }
-  },
-  afterUpdate: async (user, options) => {
-    console.log(`User updated: ${user.email}`);
-    if (user.password) {
-      const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(user.password, salt);
-    }
-  },
+    afterBulkUpdate: async (options) => {
+      console.log('afterBulkUpdate triggered. Updated fields:', options.attributes);
+    },
 
+    afterCreate: async (user, options) => {
+      console.log('afterCreate triggered for:', user.email);
+    },
 
-
+    
   indexes: [
     {
       name: 'idx_user_name',

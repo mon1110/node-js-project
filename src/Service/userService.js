@@ -51,24 +51,9 @@ const createUser = async (data,userByIdToken) => {
 
 //tokan se record through krne k liye
 const getAllUsersWithSubUsers = async () => {
-  return await userRepo.getSubUsersByToken();
-
-    // where: { softDelete: false },
-    // include: [
-    //   {
-    //     model: User,
-    //     as: 'subUsers',
-    //     attributes: ['id', 'name', 'email', 'gender']
-    //   }
-    // ]
-
-
-  return users;
+  return await userRepo.getSubUsersByToken();a
 };
 
-// const findAll = async () => {
-//   return await userRepo.findAll(); 
-// };
 
 
 
@@ -158,9 +143,10 @@ const updateUser = async (id, updateData) => {
   if (!user) {
     throw new Error(MessageConstant.USER.NOT_FOUND);
   }
-
-  return await userRepo.updateUser(id, updateData);
+  Object.assign(user, updateData);
+  return await user.save();
 };
+
 
 
 
@@ -183,9 +169,14 @@ const findByEmail = async (req) => {
 
 
 //update password
-const updatePassword = async (id, password) => {
-  return await userRepo.updatePassword(id, password);
+const updatePassword = async (userId, newPassword) => {
+  const user = await User.findByPk(userId);
+  if (!user) throw new Error('User not found');
+
+  user.password = newPassword;
+  await user.save();  // beforeSave hook trigger hoga, password hash hoga
 };
+
 
 
 const deleteUser = async (id) => {

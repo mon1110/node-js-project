@@ -12,6 +12,8 @@ const { createCustomIndexOnEmail } = require('../Service/userService');
 // const jwt = require('../utils/jwt');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+
 
 const createUser = async (req, res, next) => {
   try {
@@ -38,23 +40,6 @@ const getAllUserss = async (req, res, next) => {
     next(err);
   }
 };
-
-
-
-
-
-//tokan main sub record lene k liye
-// const getUsersByToken = async (req, res, next) => {
-//   try {
-//     const userByIdToken = req.user?.id || req.user?.userId;
-
-//     const result = await userService.getSubUsersWithOwner(userByIdToken);
-
-//     return Res.success(res, result, MessageConstant.USER.FETCH_SUCCESS);
-//   } catch (error) {
-//     next(error);
-//   }
-// };
 
 
 
@@ -87,10 +72,11 @@ const login = async (req, res, next) => {
 };
 
 
-const updateUserPassword = async (req, res, next) => {
+const updatePasswordController = async (req, res, next) => {
   try {
-    await userService.updatePassword(req);
-    return Res.success(res, null, MessageConstant.USER.PASSWORD_UPDATE_SUCCESS);
+    const { userId, newPassword } = req.body;
+    await userService.updatePassword(userId, newPassword);
+    res.status(200).json({ message: 'Password updated successfully' });
   } catch (error) {
     next(error);
   }
@@ -98,19 +84,33 @@ const updateUserPassword = async (req, res, next) => {
 
 const updateUser = async (req, res, next) => {
   try {
-    const userIdFromToken = req.user.id;
-    const userIdFromParams = req.params.id;
+    const userIdFromToken = req.user.userId;
+    const { oldPassword, newPassword } = req.body;
 
-    if (parseInt(userIdFromToken) !== parseInt(userIdFromParams)) {
-      return Res.error(res, "You can only update your own account", 403);
+    if (!oldPassword || !newPassword) {
+      return Res.error(res, MessageConstant.USER.PASSWORD_REQUIRED);
     }
 
-    const updated = await userService.updateUser(userIdFromParams, req.body);
-    return Res.success(res, updated, MessageConstant.USER.UPDATE_SUCCESS);
+    const user = await userService.getUserById(userIdFromToken);
+    if (!user) {
+      return Res.error(res, MessageConstant.USER.NOT_FOUND);
+    }
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return Res.error(res, MessageConstant.USER.INVALID_OLD_PASSWORD);
+    }
+
+    await userService.updateUser(userIdFromToken, { password: newPassword });
+
+    return Res.success(res, null, MessageConstant.USER.PASSWORD_UPDATED);
   } catch (error) {
     next(error);
   }
 };
+
+
+
 
 const findByEmail = async (req, res, next) => {
   try {
@@ -419,7 +419,7 @@ module.exports = {
   saveUser,
   fetchAllUsers,
   login,
-  updateUserPassword,
+  updatePasswordController,
   findByEmail,
   registerUser,
   processExternalApi,

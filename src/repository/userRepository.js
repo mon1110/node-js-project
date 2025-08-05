@@ -29,15 +29,20 @@ const findAll = async () => {
 
 const getSubUsersByToken = async () => {
   return await User.findAll({
-    where: { softDelete: false },
+    where: { softDelete: false }, 
     include: [
       {
         model: User,
         as: 'subUsers',
-        attributes: ['id', 'name', 'email', 'gender']
+        attributes: ['id', 'name', 'email', 'gender'],
+        where: { softDelete: false }, 
+        required: true,  
+        // separate: true,   
+        order: [['name', 'ASC']]
       }
-    ]
-  })
+    ],
+    order: [['name', 'ASC']]
+  });
 };
 
 
@@ -85,9 +90,10 @@ const findUserByEmail = async (email) => {
 };
 
 //custom error ke liye ye use hoga
-const getUserById = async () => {
-  return await User.findByPk({where: {softDelete: false}}); // Database access layer only
+const getUserById = async (id) => {
+  return await User.findOne({ where: { id, softDelete: false } });
 };
+
 
 
 
@@ -102,26 +108,26 @@ const softDeleteUser = async (id) => {
   return deleted;
 };
 
-const filterUsersByEmail = async (req) => {
+const filterUsersByEmail = async ({ letter }) => {
   try {
-    console.log(req)
-    const { letter } = req;
+    if (!letter) return [];
 
-    const where = {};
-    if (letter) {
-      where.name = { [Op.iLike]: `%${letter}%` };
-    }
-    if (letter) {
-      where.email = { [Op.iLike]: `%${letter}%` };
-    }
+    const where = {
+      [Op.or]: [
+        { name: { [Op.iLike]: `%${letter}%` } },
+        { email: { [Op.iLike]: `%${letter}%` } }
+      ],
+      softDelete: false
+    };
 
-    return await User.findAll({ where, logging: console.log });
+    return await User.findAll({ where });
   } catch (err) {
-    console.log(err)
+    console.error(err);
+    throw err;
   }
-
-
 };
+
+
 
 const findUsersByIds = async (ids) => {
   return await User.findAll({
@@ -132,9 +138,11 @@ const findUsersByIds = async (ids) => {
 };
 
 
-const findUserById = async () => {
-  return await User.findByPk({where: {softDelete: false}});
+const findUserById = async (id) => {
+  return await User.findOne({ where: { id, softDelete: false } });
 };
+
+
 
 const updateUserMenus = async (user, menuIds) => {
   user.menuIds = menuIds;
@@ -177,7 +185,6 @@ const getUsersWithmenu = async (req, res) => {
           attributes: ['id', 'name'],
           as: 'menu',
           on: Sequelize.literal(`"menu"."id" = ANY("users"."menuIds")`)
-
         }],
       where: { softDelete: false },
       attributes: ['id', 'name', 'email', 'id'],
@@ -271,14 +278,25 @@ const findExistingUsers = async (emails) => {
 };
 
 const bulkSaveUsers = async (users) => {
-  return await User.bulkCreate(users, {
-    returning: true,
-    // conflictFields: ['email'], 
-    // conflictWhere: { softDelete: false }, 
-    // ignoreDuplicates: true, 
-    updateOnDuplicate: ['name', 'gender', 'menuIds'] 
-  });
+  const t = await sequelize.transaction();
+
+  try {
+    const savedUsers = await User.bulkCreate(users, {
+      returning: true,
+      transaction: t,
+      updateOnDuplicate: ['name', 'gender', 'menuIds'],
+      validate: true 
+    });
+
+    await t.commit(); // Commit if successful
+    return savedUsers;
+
+  } catch (error) {
+    await t.rollback(); // Rollback if error
+    throw error;
+  }
 };
+
 
 
 

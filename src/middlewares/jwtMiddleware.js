@@ -1,36 +1,21 @@
-// src/middleware/authenticate.js
-const { verifyToken } = require('../utils/jwt'); // aapke JWT helper ka path adjust karein
-const MessageConstant = require('../constants/MessageConstant');
+// middleware/authenticate.js
+const { verifyToken } = require('../utils/jwt');
 
 const authenticate = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  if (!authHeader) {
-    return res.status(401).json({
-      status: 'error',
-      code: 401,
-      description: MessageConstant.AUTH_HEADER_MISSING || 'Authorization header missing or invalid',
-    });
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Authorization header missing or malformed' });
   }
 
-  const token = authHeader.split(' ')[1]; // 'Bearer tokenstring' se token nikal rahe hain
-  if (!token) {
-    return res.status(401).json({
-      status: 'error',
-      code: 401,
-      description: MessageConstant.TOKEN_MISSING || 'Token is not defined',
-    });
-  }
+  const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = verifyToken(token);
-    req.user = decoded; // user info request me daal rahe hain for next middleware/controller
+    const decoded = verifyToken(token); // should return { id: 123 }
+    req.user = decoded;
     next();
-  } catch (error) {
-    return res.status(403).json({
-      status: 'error',
-      code: 403,
-      description: 'Token is invalid or expired',
-    });
+  } catch (err) {
+    return res.status(403).json({ message: 'Invalid or expired token' });
   }
 };
 
