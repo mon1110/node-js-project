@@ -5,7 +5,6 @@ const { fetchAllUsers } = require('../controllers/UserController');
 const authenticateToken = require('../middlewares/authMiddleware');
 const { registerUser } = require('../controllers/UserController');
 const jwtMiddleware = require('../middlewares/jwtMiddleware');
-// const { authenticate } = require('../middleware/jwtmiddleware'); 
 
 router.get('/owner', userController.getAllUserss); 
 
@@ -34,7 +33,7 @@ router.get('/email', userController.findByEmail);
 router.get('/users', jwtMiddleware, userController.getUsers);
 
 
-// Create a new user
+// Create a new user(not array)
 router.post('/register', jwtMiddleware, userController.createUser);
 
 //custom error ke liye ye use hoga
@@ -69,7 +68,7 @@ router.delete('/:id', authenticateToken, userController.deleteUser);
 //single api
 router.post("/save", userController.saveUser);
 
-//RMQ ke liye
+//RMQ ke liye(create new user using array)
 router.post('/registeraaa', userController.registerUser); 
 
 
