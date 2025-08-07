@@ -297,11 +297,6 @@ const bulkSaveUsers = async (users) => {
   }
 };
 
-
-
-
- 
-
 //single api
 const saveUser = async (userData) => {
   if (!userData || typeof userData !== "object") {
@@ -342,14 +337,7 @@ const createCustomIndexOnEmail = async () => {
   });
 };
 
-//token se sub id fatch krne k liye
-// const findUsersByTokenOwner = async (userIdToken) => {
-//   return User.findAll({
-//     where: {
-//       userByIdToken: userIdToken.toString()
-//     }
-//   });
-// };
+
 
 
 
@@ -382,5 +370,4 @@ module.exports = {
   findById,
    updateByEmail,
    createCustomIndexOnEmail,
-  //  findUsersByTokenOwner
 }

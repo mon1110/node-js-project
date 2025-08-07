@@ -8,12 +8,13 @@ const { BadRequestException } = require('../utils/errors');
 const getTemplate = require('../utils/mailtemplate'); 
 const { sendToMailQueue } = require('../Service/rmqService');
 const { User } = require('../models'); 
-const { Settings } = require('../models'); 
+// const { Settings } = require('../models'); 
 const { getAuthConfig } = require('../utils/settingsUtil');
 const { generateToken } = require('../utils/jwt'); 
 const schedule = require('node-schedule');
 const bcrypt = require('bcrypt');
 const { scheduleUserUnblock } = require('./schedulerService');
+const { Settings } = require('../models');
 
 
 
@@ -51,7 +52,7 @@ const createUser = async (data,userByIdToken) => {
 
 //tokan se record through krne k liye
 const getAllUsersWithSubUsers = async () => {
-  return await userRepo.getSubUsersByToken();a
+  return await userRepo.getSubUsersByToken();
 };
 
 

@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const db = require("../config/db.config");
+const db = require("../config/db.config"); // ✅ Correct
 const bcrypt = require('bcrypt');
 
 const User = db.define('users', {
@@ -147,5 +147,7 @@ User.prototype.toJSON = function () {
 User.prototype.comparePassword = async function (plainPassword) {
   return await bcrypt.compare(plainPassword, this.password);
 };
+
+
 
 module.exports = User;

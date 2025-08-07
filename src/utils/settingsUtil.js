@@ -1,5 +1,5 @@
 // utils/settingsUtil.js
-const { Settings } = require('../models');
+const { Settings } = require('../models/Settings');
 
 const getAuthConfig = async () => {
   const rows = await Settings.findAll({ where: { softDelete: false } });

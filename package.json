@@ -3,10 +3,16 @@
   "version": "1.0.0",
   "description": "Simple API ",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
-  },
+  
+    "scripts": {
+      "test": "jest",
+      "test:coverage": "jest --coverage"
+    },
+    "jest": {
+      "testEnvironment": "node"
+    },
+  
+  
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -42,5 +48,11 @@
     "swagger-ui-express": "^5.0.1",
     "xlsx": "^0.18.5"
   },
-  "keywords": []
+  "keywords": [],
+  "devDependencies": {
+    "jest": "^30.0.5",
+    "jest-mock-extended": "^4.0.0",
+    "sinon": "^21.0.0",
+    "supertest": "^7.1.4"
+  }
 }

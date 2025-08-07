@@ -17,4 +17,12 @@ sequelize.sync().then(() => {
   console.error('Database connection error:', err);
 });
 
+jest.mock('../config/db.config', () => ({
+  getAuthConfig: jest.fn().mockResolvedValue({
+    maxAttempts: 4,
+    blockDurationMs: 30000,
+  }),
+}));
+
+
 module.exports = sequelize;
