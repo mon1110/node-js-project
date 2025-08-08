@@ -4,18 +4,16 @@ const MessageConstant = require("../constants/MessageConstant");
 const { sendEmail } = require("../utils/EmailService");
 const jwt = require('jsonwebtoken');
 const SECRET_KEY = 'your-secret-key'; 
-const { BadRequestException } = require('../utils/errors');
+const { BadRequestException, NotFoundException } = require('../utils/errors');
 const getTemplate = require('../utils/mailtemplate'); 
 const { sendToMailQueue } = require('../Service/rmqService');
 const { User } = require('../models'); 
-// const { Settings } = require('../models'); 
 const { getAuthConfig } = require('../utils/settingsUtil');
 const { generateToken } = require('../utils/jwt'); 
 const schedule = require('node-schedule');
 const bcrypt = require('bcrypt');
 const { scheduleUserUnblock } = require('./schedulerService');
 const { Settings } = require('../models');
-
 
 
 const createUser = async (data,userByIdToken) => {
@@ -54,8 +52,6 @@ const createUser = async (data,userByIdToken) => {
 const getAllUsersWithSubUsers = async () => {
   return await userRepo.getSubUsersByToken();
 };
-
-
 
 
 //use for password block/ unblock 
@@ -117,8 +113,6 @@ const login = async ({ email, password }) => {
 };
 
 
-
-
 //nodemailer ke liye
 const getAllUsers = async () => {
   return await userRepo.findAll();
@@ -148,10 +142,6 @@ const updateUser = async (id, updateData) => {
   return await user.save();
 };
 
-
-
-
-
 const findByEmail = async (req) => {
   const { email } = req;
 
@@ -169,15 +159,17 @@ const findByEmail = async (req) => {
 };
 
 
-//update password
+//update password with hashing
 const updatePassword = async (userId, newPassword) => {
   const user = await User.findByPk(userId);
   if (!user) throw new Error('User not found');
 
-  user.password = newPassword;
+  // Hash the new password before saving
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  user.password = hashedPassword;
+
   await user.save();  // beforeSave hook trigger hoga, password hash hoga
 };
-
 
 
 const deleteUser = async (id) => {
@@ -202,7 +194,6 @@ const assignMenusToUser = async (userId, menuIds) => {
 const getAllUsersWithMenus = async () => {
   return await userRepo.findAllUsersWithMenus(); 
 };
-
 
 
 //pagination
@@ -236,8 +227,6 @@ const getUsersWithmenu = async () => {
 const bulkInsertUsers = async (users) => {
   return await userRepo.bulkSaveUsers(users); // Skip existing softDelete=false
 };
-
-
 
 
 
@@ -275,34 +264,11 @@ const sendWelcomeMailsToAllUsers = async () => {
     await sendToMailQueue(mailPayload);
 
   }
-  };
+};
 
-  const createCustomIndexService = async () => {
-    return await userRepo.createCustomIndexOnEmail();
-  };
-  
-  //token se sub id fatch krne k liye
-  // const getSubUsersWithOwner = async (userByIdToken) => {
-  //   const subUsers = await User.findAll({
-  //     where: {
-  //       userByIdToken: userByIdToken.toString(),
-  //       softDelete: false
-  //     },
-  //     attributes: { exclude: ['password'] }
-  //   });
-  
-  //   const ownerUser = await User.findByPk(userByIdToken, {
-  //     attributes: ['id', 'name', 'email', 'gender']
-  //   });
-  
-  //   return {
-  //     user: ownerUser,
-  //     subUsers
-  //   };
-  // };
-  
-    
-
+const createCustomIndexService = async () => {
+  return await userRepo.createCustomIndexOnEmail();
+};
 
 
 module.exports = {
@@ -328,8 +294,4 @@ module.exports = {
   findByEmail,
   sendWelcomeMailsToAllUsers,
   createCustomIndexService,
-  // getSubUsersWithOwner
 };
-
-
-// [{id:40, ...., subUsers:[{},{},{},]}]

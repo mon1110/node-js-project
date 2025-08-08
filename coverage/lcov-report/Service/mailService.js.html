@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">50% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>4/8</span>
+                <span class='fraction'>10/10</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">83.33% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>5/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">50% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>4/8</span>
+                <span class='fraction'>10/10</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line medium'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -89,24 +89,30 @@
 <a name='L24'></a><a href='#L24'>24</a>
 <a name='L25'></a><a href='#L25'>25</a>
 <a name='L26'></a><a href='#L26'>26</a>
-<a name='L27'></a><a href='#L27'>27</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">3x</span>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -115,14 +121,19 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const nodemailer = require('nodemailer');
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// mailService.js
+const nodemailer = require('nodemailer');
 const { getEnv } = require('../utils/envHelper');
 &nbsp;
-const sendMail = <span class="fstat-no" title="function not covered" >as</span>ync ({ to, name, subject, html }) =&gt; {
-  const emailUser = <span class="cstat-no" title="statement not covered" >getEnv('EMAIL_USER'); </span>
-  const mailSubject = <span class="cstat-no" title="statement not covered" >subject || 'No Subject'; </span>
+const getTemplate = (name) =&gt; {
+  return `&lt;h1&gt;Hello ${name || <span class="branch-1 cbranch-no" title="branch not covered" >'User'}</span>,&lt;/h1&gt;&lt;p&gt;Welcome to our platform!&lt;/p&gt;`;
+};
 &nbsp;
-  const transporter = <span class="cstat-no" title="statement not covered" >nodemailer.createTransport({</span>
+const sendMail = async ({ to, name, subject, html }) =&gt; {
+  const emailUser = getEnv('EMAIL_USER'); 
+  const mailSubject = subject || 'No Subject'; 
+&nbsp;
+  const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: emailUser,
@@ -130,17 +141,15 @@ const sendMail = <span class="fstat-no" title="function not covered" >as</span>y
     }
   });
 &nbsp;
-   //const finalHtml = html || `&lt;h1&gt;Hello ${name || 'User'},&lt;/h1&gt;&lt;p&gt;Welcome to our platform!&lt;/p&gt;`;
-&nbsp;
-<span class="cstat-no" title="statement not covered" >  await transporter.sendMail({</span>
+  await transporter.sendMail({
     from: `"TechRover Team" &lt;${emailUser}&gt;`,
     to,
     subject: mailSubject,
-    html: getTemplate(name)
+    html: html || getTemplate(name),
   });
 };
 &nbsp;
-module.exports = { sendMail };
+module.exports = { sendMail, getTemplate };
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -148,7 +157,7 @@ module.exports = { sendMail };
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-08-07T09:21:23.183Z
+                at 2025-08-08T09:38:28.447Z
             </div>
         <script src="../prettify.js"></script>
         <script>

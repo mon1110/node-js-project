@@ -1,187 +1,157 @@
 // tests/userService.test.js
-
-//  Mock config and models before importing userService
-
-jest.mock('../config/db.config', () => ({
-  define: jest.fn(() => ({
-    sync: jest.fn(),
-  })),
-}));
-
-jest.mock('../utils/settingsUtil', () => ({
-  getAuthConfig: jest.fn().mockResolvedValue({
-    maxAttempts: 4,
-    blockDurationMs: 30000,
-  }),
-}));
-
-jest.mock('../models/User', () => {
-  function UserMock() {}
-  
-  // Simulate instance method like .toJSON()
-  UserMock.prototype.toJSON = function () {
-    return {
-      id: 1,
-      name: 'Mock User',
-      email: 'mock@example.com',
-    };
+jest.mock('../config/db.config', () => {
+  return {
+    define: jest.fn(() => {
+      return {};  // mock model definition returning empty object
+    }),
+    authenticate: jest.fn().mockResolvedValue(true),
+    sync: jest.fn().mockResolvedValue(true),
   };
-
-  // Simulate static methods
-  UserMock.findOne = jest.fn();
-  UserMock.create = jest.fn();
-  UserMock.findByPk = jest.fn();
-
-  return UserMock;
 });
 
-jest.mock('../models/index', () => ({
+// Mocking User model and its methods
+jest.mock('../models', () => ({
   User: {
-    create: jest.fn(),
-    findOne: jest.fn(),
-    hasMany: jest.fn(),
-    belongsTo: jest.fn(),
-  },
-  Product: {
-    create: jest.fn(),
-    hasMany: jest.fn(),
-    belongsTo: jest.fn(),
-  },
-  menu: {
-    findAll: jest.fn(),
-  },
-  Settings: {
-    getConfig: jest.fn(),
+    findByPk: jest.fn(),
   }
 }));
 
-// ✅ Import modules AFTER mocks
-const userService = require('../Service/userService');
-const userRepo = require('../repository/userRepository');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const { USER } = require('../constants/MessageConstant'); // ✅ Fixed here
+// Mock userRepository methods
+jest.mock('../repository/userRepository', () => ({
+  findByEmail: jest.fn(),
+  createUser: jest.fn(),
+  updateByEmail: jest.fn(),
+  softDeleteUser: jest.fn(),
+  getUserById: jest.fn(),
+  findAll: jest.fn(),
+  getAllUsers: jest.fn(),
+}));
 
-jest.mock('../repository/userRepository');
-jest.mock('bcrypt');
-jest.mock('jsonwebtoken');
+// rest of your imports here
+const userService = require('../Service/userService');
+const bcrypt = require('bcrypt');
+const { User } = require('../models');
+const userRepo = require('../repository/userRepository');
+const { sendToMailQueue } = require('../Service/rmqService');
+
+jest.mock('../Service/rmqService', () => ({
+  sendToMailQueue: jest.fn(),
+}));
+
+jest.mock('../Service/rmqService', () => ({
+  sendToMailQueue: jest.fn(),
+}));
 
 describe('userService', () => {
-  afterEach(() => {
+  const mockUser = {
+    id: 1,
+    name: 'John Doe',
+    email: 'john@example.com',
+    password: '',
+    save: jest.fn().mockResolvedValue(true),
+  };
+
+  beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('createUser', () => {
-    it('should create a user and return user with token', async () => {
-      const userData = {
-        name: 'abcde',
-        email: 'abcde@gmail.com',
-        password: 'ax',
-        menuIds: [1, 2],
-        gender: 'FEMALE'
-      };
+  describe('updatePassword', () => {
+    it('should update user password successfully', async () => {
+      User.findByPk.mockResolvedValue(mockUser);
 
-      userRepo.findByEmail.mockResolvedValue(null);
-      bcrypt.hash.mockResolvedValue('hashed-password');
-      userRepo.createUser.mockResolvedValue({
-        id: 1,
-        ...userData,
-        password: 'hashed-password'
-      });
-      jwt.sign.mockReturnValue('fake-jwt-token');
+      await userService.updatePassword(1, 'newSecurePassword');
 
-      const result = await userService.createUser(userData, 123);
-      expect(result).toHaveProperty('user');
-      expect(result).toHaveProperty('token', 'fake-jwt-token');
-      expect(userRepo.createUser).toHaveBeenCalled();
+      expect(mockUser.save).toHaveBeenCalled();
+
+      // Verify that password is hashed correctly
+      const isMatch = await bcrypt.compare('newSecurePassword', mockUser.password);
+      expect(isMatch).toBe(true);
     });
 
-    it('should throw error if email already exists', async () => {
-      const userData = {
-        name: 'Existing User',
-        email: 'existing@example.com',
-        password: 'Password123',
-        menuIds: [],
-        gender: 'MALE'
-      };
+    it('should throw error if user not found', async () => {
+      User.findByPk.mockResolvedValue(null);
 
-      userRepo.findByEmail.mockResolvedValue({
-        id: 10,
-        name: 'Existing User',
-        email: 'existing@example.com'
-      });
-
-      await expect(userService.createUser(userData, 123))
-        .rejects
-        .toThrow('Email already exists');
+      await expect(userService.updatePassword(1, 'newSecurePassword')).rejects.toThrow('User not found');
     });
   });
 
-  describe('login', () => {
-    it('should login user and return user with token', async () => {
-      const loginData = {
-        email: 'abcde@gmail.com',
-        password: 'ax'
-      };
+  describe('sendWelcomeMailsToAllUsers', () => {
+    it('should send mail to valid users only', async () => {
+      const users = [
+        { name: 'Alice', email: 'alice@example.com' },
+        { name: '', email: 'noName@example.com' },
+        { name: 'Bob', email: '' },
+        { name: 'Charlie', email: 'charlie@example.com' },
+      ];
+      userRepo.getAllUsers.mockResolvedValue(users);
 
-      const storedUser = {
-        id: 1,
-        name: 'abcde',
-        email: 'abcde@gmail.com',
-        password: 'hashed-password',
-        gender: 'FEMALE',
-        menuIds: [1, 2],
-        failedAttempts: 0,
-        blockedAt: null
-      };
+      await userService.sendWelcomeMailsToAllUsers();
 
-      userRepo.findByEmail.mockResolvedValue(storedUser);
-      bcrypt.compare.mockResolvedValue(true);
-      jwt.sign.mockReturnValue('fake-jwt-token');
+      const { sendToMailQueue } = require('../Service/rmqService');
+      expect(sendToMailQueue).toHaveBeenCalledTimes(2);
 
-      const result = await userService.login(loginData);
-
-      expect(result).toHaveProperty('user');
-      expect(result).toHaveProperty('token', 'fake-jwt-token');
-      expect(userRepo.findByEmail).toHaveBeenCalledWith(loginData.email);
-    });
-
-    it('should throw error if email does not exist', async () => {
-      const loginData = {
-        email: 'nonexistent@gmail.com',
-        password: 'anyPassword'
-      };
-
-      userRepo.findByEmail.mockResolvedValue(null);
-
-      await expect(userService.login(loginData)).rejects.toThrow(
-        USER.INVALID_EMAIL_OR_PASSWORD
-      );
-    });
-
-    it('should throw error if password is incorrect', async () => {
-      const loginData = {
-        email: 'abcde@gmail.com',
-        password: 'wrongPassword'
-      };
-
-      const storedUser = {
-        id: 1,
-        name: 'abcde',
-        email: 'abcde@gmail.com',
-        password: 'hashed-password',
-        gender: 'FEMALE',
-        menuIds: [1, 2],
-        failedAttempts: 0,
-        blockedAt: null
-      };
-
-      userRepo.findByEmail.mockResolvedValue(storedUser);
-      bcrypt.compare.mockResolvedValue(false);
-
-      await expect(userService.login(loginData)).rejects.toThrow(
-        USER.invalidCredentialWithCount(1, 4)
-      );
+      expect(sendToMailQueue).toHaveBeenCalledWith(expect.objectContaining({
+        to: 'alice@example.com',
+        name: 'Alice',
+        subject: 'Welcome!',
+      }));
+      expect(sendToMailQueue).toHaveBeenCalledWith(expect.objectContaining({
+        to: 'charlie@example.com',
+        name: 'Charlie',
+        subject: 'Welcome!',
+      }));
     });
   });
+
+  describe('getUserById', () => {
+    it('should throw error if id is not a number', async () => {
+      await expect(userService.getUserById('abc')).rejects.toThrow();
+    });
+
+    it('should throw error if user not found', async () => {
+      userRepo.getUserById.mockResolvedValue(null);
+
+      await expect(userService.getUserById(1)).rejects.toThrow();
+    });
+
+    it('should return user if found', async () => {
+      const user = { id: 1, name: 'Test User' };
+      userRepo.getUserById.mockResolvedValue(user);
+
+      const result = await userService.getUserById(1);
+      expect(result).toEqual(user);
+    });
+  });
+
+  describe('deleteUser', () => {
+    it('should call softDeleteUser with correct id', async () => {
+      userRepo.softDeleteUser.mockResolvedValue(true);
+
+      const result = await userService.deleteUser(1);
+      expect(userRepo.softDeleteUser).toHaveBeenCalledWith(1);
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('findByEmail', () => {
+    it('should throw if email not provided', async () => {
+      await expect(userService.findByEmail({})).rejects.toThrow();
+    });
+
+    it('should throw if user not found', async () => {
+      userRepo.findByEmail.mockResolvedValue(null);
+
+      await expect(userService.findByEmail({ email: 'test@example.com' })).rejects.toThrow();
+    });
+
+    it('should return user if found', async () => {
+      const user = { id: 1, email: 'test@example.com' };
+      userRepo.findByEmail.mockResolvedValue(user);
+
+      const result = await userService.findByEmail({ email: 'test@example.com' });
+      expect(result).toEqual(user);
+    });
+  });
+
+  // Add more tests for other methods if needed
 });

@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">26.66% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>4/15</span>
+                <span class='fraction'>14/14</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/4</span>
+                <span class='fraction'>4/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>1/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">26.66% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>4/15</span>
+                <span class='fraction'>14/14</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -90,54 +90,54 @@
 <a name='L25'></a><a href='#L25'>25</a>
 <a name='L26'></a><a href='#L26'>26</a>
 <a name='L27'></a><a href='#L27'>27</a>
-<a name='L28'></a><a href='#L28'>28</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<a name='L28'></a><a href='#L28'>28</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const axios = require('axios');
 const MessageConstant = require('../constants/MessageConstant');
 &nbsp;
-const handleRequest = <span class="fstat-no" title="function not covered" >as</span>ync (method, url, data = <span class="branch-0 cbranch-no" title="branch not covered" >null,</span> retries = <span class="branch-0 cbranch-no" title="branch not covered" >3)</span> =&gt; {
-  let attempt = <span class="cstat-no" title="statement not covered" >0;</span>
+const handleRequest = async (method, url, data = null, retries = 3) =&gt; {
+  let attempt = 0;
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  while (attempt &lt; retries) {</span>
-<span class="cstat-no" title="statement not covered" >    try {</span>
-      const config = <span class="cstat-no" title="statement not covered" >{</span>
+  while (attempt &lt; retries) {
+    try {
+      const config = {
         method: method.toLowerCase(),url,data,timeout: 5000,  };
 &nbsp;
-      const response = <span class="cstat-no" title="statement not covered" >await axios(config);</span>
-<span class="cstat-no" title="statement not covered" >      return response.data;</span>
+      const response = await axios(config);
+      return response.data;
 &nbsp;
     } catch (error) {
-<span class="cstat-no" title="statement not covered" >      attempt++;</span>
-<span class="cstat-no" title="statement not covered" >      console.log(`Attempt ${attempt} failed. Retrying...`);</span>
+      attempt++;
+      console.log(`Attempt ${attempt} failed. Retrying...`);
 &nbsp;
-<span class="cstat-no" title="statement not covered" >      if (attempt === retries) {</span>
-<span class="cstat-no" title="statement not covered" >        console.error(`All ${retries} attempts failed.`);</span>
-<span class="cstat-no" title="statement not covered" >        throw new Error(MessageConstant.REQUEST.FAILED);</span>
+      if (attempt === retries) {
+        // console.error(`All ${retries} attempts failed.`);
+        throw new Error(MessageConstant.REQUEST.FAILED);
       }
     }
   }
@@ -151,7 +151,7 @@ module.exports = { handleRequest };
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-08-07T09:21:23.183Z
+                at 2025-08-08T09:38:28.447Z
             </div>
         <script src="../prettify.js"></script>
         <script>

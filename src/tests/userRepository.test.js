@@ -6,6 +6,10 @@ jest.mock('../config/db.config', () => ({
     authenticate: jest.fn().mockResolvedValue(),
     sync: jest.fn().mockResolvedValue(),
     close: jest.fn().mockResolvedValue(),
+    transaction: jest.fn(() => Promise.resolve({
+      commit: jest.fn(),
+      rollback: jest.fn(),
+    })),
   }));
   
   // Mock models
@@ -14,6 +18,9 @@ jest.mock('../config/db.config', () => ({
     findOne: jest.fn(),
     update: jest.fn(),
     findAll: jest.fn(),
+    upsert: jest.fn(),
+    bulkCreate: jest.fn(),
+    save: jest.fn(),
   }));
   
   jest.mock('../models/menu', () => ({
@@ -89,9 +96,10 @@ jest.mock('../config/db.config', () => ({
     describe('softDeleteUser', () => {
       it('should soft delete a user', async () => {
         const id = 2;
-        const mockResponse = [1];
+        const mockResponse = 1;
   
-        User.update.mockResolvedValue(mockResponse);
+        // Note: userRepo.softDeleteUser returns deleted count (first element of update array)
+        User.update.mockResolvedValue([mockResponse]);
   
         const result = await userRepo.softDeleteUser(id);
   
@@ -99,7 +107,7 @@ jest.mock('../config/db.config', () => ({
           { softDelete: true },
           { where: { id }, returning: true }
         );
-        expect(result).toBe(mockResponse[0]);
+        expect(result).toBe(mockResponse);
       });
     });
   
@@ -131,6 +139,7 @@ jest.mock('../config/db.config', () => ({
         expect(result).toBe(mockUsers);
       });
     });
+  
   
   });
   

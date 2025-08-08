@@ -17,7 +17,7 @@ const handleRequest = async (method, url, data = null, retries = 3) => {
       console.log(`Attempt ${attempt} failed. Retrying...`);
 
       if (attempt === retries) {
-        console.error(`All ${retries} attempts failed.`);
+        // console.error(`All ${retries} attempts failed.`);
         throw new Error(MessageConstant.REQUEST.FAILED);
       }
     }
