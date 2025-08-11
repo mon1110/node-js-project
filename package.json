@@ -4,11 +4,18 @@
   "description": "Simple API ",
   "main": "index.js",
   "scripts": {
-    "test": "jest",
-    "test:coverage": "jest --coverage",
-    "coverage": "nyc mocha src/tests/**/*.test.js"
-    
+  
+    "test:jest": "jest 'src/tests/jest/**/*.test.js'",
+    "test:jest:coverage": "jest --coverage 'src/tests/jest/**/*.test.js'",
+  
+  
+    "test:mocha": "mocha 'src/tests/mocha/**/*.test.js'",
+    "test:mocha:coverage": "nyc mocha 'src/tests/mocha/**/*.test.js'",
+  
+    "test:all": "npm run test:jest && npm run test:mocha"
   },
+  
+  
   "author": "",
   "license": "ISC",
   "dependencies": {
