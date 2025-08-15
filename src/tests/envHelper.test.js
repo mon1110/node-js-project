@@ -1,26 +1,35 @@
+// test/envHelper.falsy.test.js
 const assert = require('assert');
-const envHelper = require('../../utils/envHelper');
+const sinon = require('sinon');
+const { expect } = require('chai');
+const envHelper = require('../utils/envHelper');
+
+let originalEnv;
 
 describe('envHelper falsy values', () => {
-  beforeEach(() => {
-    process.env = { ...process.env };
-  });
-
   before(() => {
-    // Backup original env before tests
+    // Backup original process.env before tests
     originalEnv = { ...process.env };
   });
 
   beforeEach(() => {
-    // Reset process.env before each test
+    // Reset process.env to the original before each test
     process.env = { ...originalEnv };
-    // Mock your env var fresh
-    process.env.TEST_VAR = 'testValue';
+
+    // Stub process.env to inject a test variable
+    sinon.stub(process, 'env').value({
+      ...originalEnv,
+      TEST_VAR: 'testValue',
+    });
   });
 
   afterEach(() => {
-    // Restore after each test to avoid side effects
-    process.env = { ...originalEnv };
+    // Restore stubs after each test
+    sinon.restore();
+  });
+
+  it('should read the mocked env variable', () => {
+    expect(process.env.TEST_VAR).to.equal('testValue');
   });
 
   it('should return the environment variable if it exists', () => {

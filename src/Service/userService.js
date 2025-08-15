@@ -6,14 +6,18 @@ const jwt = require('jsonwebtoken');
 const SECRET_KEY = 'your-secret-key'; 
 const { BadRequestException, NotFoundException } = require('../utils/errors');
 const getTemplate = require('../utils/mailtemplate'); 
-const { sendToMailQueue } = require('../Service/rmqService');
-const { User } = require('../models'); 
+const { sendMailToQueue } = require('../Service/rmqService');
+// const { User } = require('../models'); 
 const { getAuthConfig } = require('../utils/settingsUtil');
-const { generateToken } = require('../utils/jwt'); 
+const { generateToken } = require('../utils/jwt');
 const schedule = require('node-schedule');
 const bcrypt = require('bcrypt');
 const { scheduleUserUnblock } = require('./schedulerService');
-const { Settings } = require('../models');
+const { Settings } = require('../models/Settings');
+const jwtUtil = require('../utils/jwt');
+const db = require('../models');
+const { sendToMailQueue } = require('../Service/rmqService');
+const rmqService = require('../Service/rmqService'); // <-- import this
 
 
 const createUser = async (data,userByIdToken) => {
@@ -21,7 +25,7 @@ const createUser = async (data,userByIdToken) => {
 
   if (!name || !email || !menuIds || !password || !gender) {
     throw new BadRequestException(MessageConstant.USER.ALL_FIELDS_REQUIRED);
-  }
+  } 
 
   const existingUser = await userRepo.findByEmail(email.toLowerCase());
   if (existingUser) {
@@ -74,7 +78,7 @@ const login = async ({ email, password }) => {
     const unblockTime = new Date(user.blockedAt.getTime() + blockDurationMs);
     if (now < unblockTime) {
       const remainingMin = Math.ceil((unblockTime - now) / 60000);
-      throw new BadRequestException(MessageConstant.USER.blockedWithTimer(remainingMin));
+      throw new BadRequestException(MessageConstant.USER.BLOCKED_WITH_TIMER(remainingMin));
     } else {
       // Unblock after timeout
       await userRepo.updateByEmail(user.email, { failedAttempts: 0 });
@@ -108,7 +112,7 @@ const login = async ({ email, password }) => {
   // Successful login – reset counters
   await userRepo.updateByEmail(user.email, { failedAttempts: 0, blockedAt: null });
 
-  const token = generateToken({ userId: user.id });
+  const token = jwtUtil.generateToken({ userId: user.id });
   return { user, token };
 };
 
@@ -161,15 +165,22 @@ const findByEmail = async (req) => {
 
 //update password with hashing
 const updatePassword = async (userId, newPassword) => {
-  const user = await User.findByPk(userId);
+  const user = await userRepo.findById(userId);
+  console.log("User found:", user);
   if (!user) throw new Error('User not found');
 
   // Hash the new password before saving
   const hashedPassword = await bcrypt.hash(newPassword, 10);
+  console.log("Generated hashedPassword:", hashedPassword);
+
   user.password = hashedPassword;
 
-  await user.save();  // beforeSave hook trigger hoga, password hash hoga
+  await user.save();  
+  console.log("Password updated successfully for user id:", userId);
+  return user;
 };
+
+
 
 
 const deleteUser = async (id) => {
@@ -203,7 +214,7 @@ const getUsers = async ({ filter, sort, page }) => {
 
     // Optional: Check if result is empty or null
     if (!result || !result.data || result.data.length === 0) {
-      throw new ApiError("No users found", 404); // optional
+      throw new Error("No users found", 404); // optional
     }
 
     return result;
@@ -270,6 +281,14 @@ const createCustomIndexService = async () => {
   return await userRepo.createCustomIndexOnEmail();
 };
 
+const sendMail = async (mailData) => {
+  try {
+    return await rmqService.sendMailToQueue(mailData);
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 module.exports = {
   createUser,
@@ -294,4 +313,5 @@ module.exports = {
   findByEmail,
   sendWelcomeMailsToAllUsers,
   createCustomIndexService,
+  sendMail
 };

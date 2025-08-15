@@ -1,42 +1,48 @@
-// jsonapi.test.js
-
+const sinon = require('sinon');
+const { expect } = require('chai');
 const axios = require('axios');
-const { handleRequest } = require('../Service/jsonapi'); // Update path if needed
-const MessageConstant = require('../constants/MessageConstant');
-
-jest.mock('axios');
+const { handleRequest } = require('../Service/jsonapi'); // adjust path
 
 describe('handleRequest', () => {
+  let axiosStub;
+
+  beforeEach(() => {
+    // Stub axios itself (function), not axios.request
+    axiosStub = sinon.stub(axios, 'request').callsFake((config) => {
+      return Promise.resolve({ data: {} }); // default fake
+    });
+  });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    sinon.restore();
   });
 
-  it('should return data on successful request', async () => {
-    axios.mockResolvedValue({ data: { success: true } });
+  it('should return data on first attempt', async () => {
+    axiosStub.resolves({ data: { success: true } });
 
-    const result = await handleRequest('GET', 'https://api.example.com');
-    expect(result).toEqual({ success: true });
-    expect(axios).toHaveBeenCalledTimes(1);
+    const result = await handleRequest('GET', 'http://example.com');
+    expect(result).to.deep.equal({ success: true });
+    expect(axiosStub.calledOnce).to.be.true;
   });
 
-  it('should retry on failure and succeed on 2nd attempt', async () => {
-    axios
-      .mockRejectedValueOnce(new Error('Network Error'))
-      .mockResolvedValueOnce({ data: { success: true } });
+  it('should retry and succeed on second attempt', async () => {
+    axiosStub.onFirstCall().rejects(new Error('Network error'));
+    axiosStub.onSecondCall().resolves({ data: { success: true } });
 
-    const result = await handleRequest('GET', 'https://api.example.com');
-    expect(result).toEqual({ success: true });
-    expect(axios).toHaveBeenCalledTimes(2);
+    const result = await handleRequest('GET', 'http://example.com', null, 2, 10);
+    expect(result).to.deep.equal({ success: true });
+    expect(axiosStub.callCount).to.equal(2);
   });
 
-  it('should throw error after all retries fail', async () => {
-    axios.mockRejectedValue(new Error('Network Error'));
+  it('should fail after all retries', async () => {
+    axiosStub.rejects(new Error('Network error'));
 
-    await expect(handleRequest('POST', 'https://api.example.com', { key: 'value' }, 2))
-      .rejects
-      .toThrow(MessageConstant.REQUEST.FAILED);
-
-    expect(axios).toHaveBeenCalledTimes(2);
+    try {
+      await handleRequest('GET', 'http://example.com', null, 2, 10);
+      throw new Error('This should not run');
+    } catch (err) {
+      expect(err.message).to.include('Request failed after 2 attempts');
+    }
+    expect(axiosStub.callCount).to.equal(2);
   });
 });

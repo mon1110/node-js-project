@@ -33,9 +33,14 @@ module.exports = {
     INDEX_CREATION_FAILED: "Index creation failed",
     UNAUTHORIZED: "Unauthorized, token missing",
     AUTHORIZED_USER_BY_TOKEN: "User fetched successfully by token owner",
+    // BLOCKED_WITH_TIMER:"blockedWithTimer",
     RETRY_ATTEMPT_FAILED: (attempt) => `Attempt ${attempt} failed. Please retry.`,
-    INVALID_CREDENTIAL_WITH_COUNT: (attempts, max) => `Invalid credentials. (${attempts}/${max})`,
-    BLOCKED_WITH_TIMER: (minutes) => `Account is blocked. Try again in ${minutes} minute(s).`
+    invalidCredentialWithCount: (attempt, max) =>
+      `Invalid email or password. Attempt ${attempt}/${max}`,
+      BLOCKED_WITH_TIMER: (minutes) => `Account is blocked. Try again in ${minutes} minute(s).`,
+      INVALID_CREDENTIAL_WITH_COUNT: (count, max) =>
+        `Invalid credentials. Attempt ${count}/${max}`,
+  
   },
 
   AUTH: {

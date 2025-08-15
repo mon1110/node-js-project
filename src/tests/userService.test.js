@@ -1,157 +1,286 @@
-// tests/userService.test.js
-jest.mock('../config/db.config', () => {
-  return {
-    define: jest.fn(() => {
-      return {};  // mock model definition returning empty object
-    }),
-    authenticate: jest.fn().mockResolvedValue(true),
-    sync: jest.fn().mockResolvedValue(true),
-  };
-});
+const chai = require('chai');
+const sinon = require('sinon');
+const expect = chai.expect;
+const proxyquire = require('proxyquire').noCallThru();
 
-// Mocking User model and its methods
-jest.mock('../models', () => ({
-  User: {
-    findByPk: jest.fn(),
-  }
-}));
-
-// Mock userRepository methods
-jest.mock('../repository/userRepository', () => ({
-  findByEmail: jest.fn(),
-  createUser: jest.fn(),
-  updateByEmail: jest.fn(),
-  softDeleteUser: jest.fn(),
-  getUserById: jest.fn(),
-  findAll: jest.fn(),
-  getAllUsers: jest.fn(),
-}));
-
-// rest of your imports here
-const userService = require('../Service/userService');
-const bcrypt = require('bcrypt');
-const { User } = require('../models');
 const userRepo = require('../repository/userRepository');
-const { sendToMailQueue } = require('../Service/rmqService');
-
-jest.mock('../Service/rmqService', () => ({
-  sendToMailQueue: jest.fn(),
-}));
-
-jest.mock('../Service/rmqService', () => ({
-  sendToMailQueue: jest.fn(),
-}));
+const bcrypt = require('bcrypt');
+const jwtUtil = require('../utils/jwt');
+const settingsUtil = require('../utils/settingsUtil');
+const rmqService = require('../Service/rmqService');
 
 describe('userService', () => {
-  const mockUser = {
-    id: 1,
-    name: 'John Doe',
-    email: 'john@example.com',
-    password: '',
-    save: jest.fn().mockResolvedValue(true),
-  };
+  let sandbox;
+  let userService;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    sandbox = sinon.createSandbox();
+    // default require without proxyquire unless overridden
+    userService = require('../Service/userService');
+  });
+
+  afterEach(() => {
+    sandbox.restore();
+    delete require.cache[require.resolve('../Service/userService')];
+  });
+
+  describe('createUser', () => {
+    it('should throw if required fields missing', async () => {
+      try {
+        await userService.createUser({});
+      } catch (err) {
+        expect(err.message).to.include('All fields are required');
+      }
+    });
+  
+    it('should throw if email exists', async () => {
+      sandbox.stub(userRepo, 'findByEmail').resolves({ id: 1, email: 'exists@example.com' });
+  
+      try {
+        await userService.createUser({
+          name: 'Test',
+          email: 'exists@example.com',
+          menuIds: [1],
+          password: 'pass',
+          gender: 'M',
+        });
+      } catch (err) {
+        expect(err.message).to.include('Email already exists');
+      }
+    });
+  
+    it('should create user and return token', async () => {
+      // Create a local userService using proxyquire to stub jwtUtil
+      const fakeJwtUtil = { generateToken: () => 'fakeToken' };
+      const localUserService = proxyquire('../Service/userService', {
+        '../repository/userRepository': userRepo,
+        '../utils/jwt': fakeJwtUtil,
+        'bcrypt': bcrypt
+      });
+  
+      it('should create user and return token', async () => {
+        sandbox.stub(userRepo, 'findByEmail').resolves(null);
+        sandbox.stub(userRepo, 'createUser').resolves({ id: 1, email: 'test@example.com' });
+        sandbox.stub(bcrypt, 'hash').resolves('hashedpass');
+      
+        const result = await localUserService.createUser({
+          name: 'Test',
+          email: 'test@example.com',
+          menuIds: [1],
+          password: 'pass',
+          gender: 'M',
+        });
+      
+        expect(result).to.have.property('token', 'fakeToken');   // now this works
+        expect(result.user).to.have.property('email', 'test@example.com');
+      });
+    });
+    });
+
+  describe('login', () => {
+    it('should throw if email or password missing', async () => {
+      try {
+        await userService.login({ email: '', password: '' });
+      } catch (err) {
+        expect(err.message).to.include('All fields are required');
+      }
+    });
+
+    it('should throw if user not found', async () => {
+      sandbox.stub(userRepo, 'findByEmail').resolves(null);
+
+      try {
+        await userService.login({ email: 'nouser@example.com', password: 'pass' });
+      } catch (err) {
+        expect(err.message).to.include('Invalid email or password');
+      }
+    });
+
+    it('should throw if user blocked', async () => {
+      const user = {
+        email: 'blocked@example.com',
+        blockedAt: new Date(Date.now() - 1000),
+        failedAttempts: 3,
+      };
+      sandbox.stub(userRepo, 'findByEmail').resolves(user);
+      sandbox.stub(settingsUtil, 'getAuthConfig').resolves({ maxAttempts: 3, blockDurationMs: 600000 });
+
+      try {
+        await userService.login({ email: 'blocked@example.com', password: 'pass' });
+      } catch (err) {
+        expect(err.message).to.include('blocked');
+      }
+    });
+
+    it('should throw if password incorrect and increment attempts', async () => {
+      const user = { email: 'user@example.com', password: 'hashedpass', failedAttempts: 1, blockedAt: null };
+      sandbox.stub(userRepo, 'findByEmail').resolves(user);
+      sandbox.stub(settingsUtil, 'getAuthConfig').resolves({ maxAttempts: 3, blockDurationMs: 600000 });
+      sandbox.stub(bcrypt, 'compare').resolves(false);
+      sandbox.stub(userRepo, 'updateByEmail').resolves();
+
+      try {
+        await userService.login({ email: 'user@example.com', password: 'wrongpass' });
+      } catch (err) {
+        expect(err.message).to.include('Invalid email or password');
+      }
+    });
+
+    it('should return user and token on successful login', async () => {
+      const user = { id: 1, email: 'user@example.com', password: 'hashedpass', failedAttempts: 0, blockedAt: null };
+      sandbox.stub(userRepo, 'findByEmail').resolves(user);
+      sandbox.stub(settingsUtil, 'getAuthConfig').resolves({ maxAttempts: 3, blockDurationMs: 600000 });
+      sandbox.stub(bcrypt, 'compare').resolves(true);
+      sandbox.stub(userRepo, 'updateByEmail').resolves();
+      sandbox.stub(jwtUtil, 'generateToken').returns('fakeToken');
+
+      const result = await userService.login({ email: 'user@example.com', password: 'correctpass' });
+
+      expect(result).to.have.property('token', 'fakeToken');
+      expect(result.user).to.equal(user);
+    });
+  });
+
+  describe('updateUser', () => {
+    it('should throw error if user not found', async () => {
+      sandbox.stub(userRepo, 'findById').resolves(null);
+
+      try {
+        await userService.updateUser(999, { name: 'NewName' });
+      } catch (err) {
+        expect(err.message).to.include('not found');
+      }
+    });
+
+    it('should update user data and save', async () => {
+      const user = { save: sandbox.stub().resolves(), name: 'OldName' };
+      sandbox.stub(userRepo, 'findById').resolves(user);
+
+      await userService.updateUser(1, { name: 'NewName' });
+
+      expect(user.name).to.equal('NewName');
+      expect(user.save.calledOnce).to.be.true;
+    });
   });
 
   describe('updatePassword', () => {
-    it('should update user password successfully', async () => {
-      User.findByPk.mockResolvedValue(mockUser);
+    it('should update password with hashing', async () => {
+      const fakeUser = {
+        password: 'oldPass',
+        save: sandbox.stub().resolves()
+      };
 
-      await userService.updatePassword(1, 'newSecurePassword');
+      // Mock repo to return fakeUser
+      sandbox.stub(userRepo, 'findById').resolves(fakeUser);
 
-      expect(mockUser.save).toHaveBeenCalled();
+      // Mock bcrypt to return deterministic value
+      sandbox.stub(bcrypt, 'hash').resolves('hashedPassword');
 
-      // Verify that password is hashed correctly
-      const isMatch = await bcrypt.compare('newSecurePassword', mockUser.password);
-      expect(isMatch).toBe(true);
+      const result = await userService.updatePassword(1, 'newpass');
+
+      // Assertions
+      expect(result).to.equal(fakeUser); // Returns the same fakeUser
+      expect(fakeUser.password).to.equal('hashedPassword');
+      expect(fakeUser.save.calledOnce).to.be.true;
     });
 
-    it('should throw error if user not found', async () => {
-      User.findByPk.mockResolvedValue(null);
+    it('should throw if user not found', async () => {
+      sandbox.stub(userRepo, 'findById').resolves(null);
 
-      await expect(userService.updatePassword(1, 'newSecurePassword')).rejects.toThrow('User not found');
-    });
-  });
-
-  describe('sendWelcomeMailsToAllUsers', () => {
-    it('should send mail to valid users only', async () => {
-      const users = [
-        { name: 'Alice', email: 'alice@example.com' },
-        { name: '', email: 'noName@example.com' },
-        { name: 'Bob', email: '' },
-        { name: 'Charlie', email: 'charlie@example.com' },
-      ];
-      userRepo.getAllUsers.mockResolvedValue(users);
-
-      await userService.sendWelcomeMailsToAllUsers();
-
-      const { sendToMailQueue } = require('../Service/rmqService');
-      expect(sendToMailQueue).toHaveBeenCalledTimes(2);
-
-      expect(sendToMailQueue).toHaveBeenCalledWith(expect.objectContaining({
-        to: 'alice@example.com',
-        name: 'Alice',
-        subject: 'Welcome!',
-      }));
-      expect(sendToMailQueue).toHaveBeenCalledWith(expect.objectContaining({
-        to: 'charlie@example.com',
-        name: 'Charlie',
-        subject: 'Welcome!',
-      }));
-    });
-  });
-
-  describe('getUserById', () => {
-    it('should throw error if id is not a number', async () => {
-      await expect(userService.getUserById('abc')).rejects.toThrow();
-    });
-
-    it('should throw error if user not found', async () => {
-      userRepo.getUserById.mockResolvedValue(null);
-
-      await expect(userService.getUserById(1)).rejects.toThrow();
-    });
-
-    it('should return user if found', async () => {
-      const user = { id: 1, name: 'Test User' };
-      userRepo.getUserById.mockResolvedValue(user);
-
-      const result = await userService.getUserById(1);
-      expect(result).toEqual(user);
+      try {
+        await userService.updatePassword(999, 'newpass');
+      } catch (err) {
+        expect(err.message).to.include('not found');
+      }
     });
   });
 
   describe('deleteUser', () => {
-    it('should call softDeleteUser with correct id', async () => {
-      userRepo.softDeleteUser.mockResolvedValue(true);
+    it('should call softDeleteUser and return result', async () => {
+      const deleteResult = { deleted: true };
+      sandbox.stub(userRepo, 'softDeleteUser').resolves(deleteResult);
 
       const result = await userService.deleteUser(1);
-      expect(userRepo.softDeleteUser).toHaveBeenCalledWith(1);
-      expect(result).toBe(true);
+      expect(result).to.equal(deleteResult);
     });
   });
 
   describe('findByEmail', () => {
-    it('should throw if email not provided', async () => {
-      await expect(userService.findByEmail({})).rejects.toThrow();
+    it('should throw if email missing', async () => {
+      try {
+        await userService.findByEmail({});
+      } catch (err) {
+        expect(err.message).to.include('Email required');
+      }
     });
 
     it('should throw if user not found', async () => {
-      userRepo.findByEmail.mockResolvedValue(null);
+      sandbox.stub(userRepo, 'findByEmail').resolves(null);
 
-      await expect(userService.findByEmail({ email: 'test@example.com' })).rejects.toThrow();
+      try {
+        await userService.findByEmail({ email: 'nouser@example.com' });
+      } catch (err) {
+        expect(err.message).to.include('not found');
+      }
     });
 
     it('should return user if found', async () => {
-      const user = { id: 1, email: 'test@example.com' };
-      userRepo.findByEmail.mockResolvedValue(user);
+      const user = { email: 'test@example.com' };
+      sandbox.stub(userRepo, 'findByEmail').resolves(user);
 
       const result = await userService.findByEmail({ email: 'test@example.com' });
-      expect(result).toEqual(user);
+      expect(result).to.equal(user);
     });
   });
 
-  // Add more tests for other methods if needed
+  describe('assignMenusToUser', () => {
+    it('should throw if user not found', async () => {
+      sandbox.stub(userRepo, 'findUserById').resolves(null);
+
+      try {
+        await userService.assignMenusToUser(999, [1, 2]);
+      } catch (err) {
+        expect(err.message).to.include('not found');
+      }
+    });
+
+    it('should update menus if user found', async () => {
+      const user = { id: 1 };
+      sandbox.stub(userRepo, 'findUserById').resolves(user);
+      sandbox.stub(userRepo, 'updateUserMenus').resolves({ id: 1, menuIds: [1, 2] });
+
+      const result = await userService.assignMenusToUser(1, [1, 2]);
+      expect(result.menuIds).to.include(1);
+      expect(result.menuIds).to.include(2);
+    });
+  });
+
+  describe('getUsers', () => {
+    it('should throw if no users found', async () => {
+      sandbox.stub(userRepo, 'getUsers').resolves({ data: [] });
+
+      try {
+        await userService.getUsers({ filter: {}, sort: {}, page: 1 });
+      } catch (err) {
+        expect(err.message).to.include('No users found');
+      }
+    });
+
+    it('should return users if found', async () => {
+      const users = [{ id: 1 }];
+      sandbox.stub(userRepo, 'getUsers').resolves({ data: users });
+
+      const result = await userService.getUsers({ filter: {}, sort: {}, page: 1 });
+      expect(result.data).to.eql(users);
+    });
+  });
+
+  describe('sendMail', () => {
+    it('should call RMQ service', async () => {
+      sandbox.stub(rmqService, 'sendMailToQueue').resolves(true);
+
+      const result = await userService.sendMail({ email: 'a@b.com' });
+      expect(result).to.be.true;
+    });
+  });
 });

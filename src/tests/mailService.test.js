@@ -1,30 +1,32 @@
-// src/tests/mailService.test.js
-jest.mock('nodemailer');
-jest.mock('../utils/envHelper', () => ({
-  getEnv: jest.fn(),
-}));
-
+// src/tests/mocha/mailService.test.js
+const { expect } = require('chai');
+const sinon = require('sinon');
 const nodemailer = require('nodemailer');
-const { getEnv } = require('../utils/envHelper');
-
-// Import both sendMail and getTemplate from mailService
+const envHelper = require('../utils/envHelper');
 const mailService = require('../Service/mailService');
 
 describe('mailService', () => {
-  let sendMailMock;
-
-  beforeAll(() => {
-    sendMailMock = jest.fn().mockResolvedValue(true);
-    nodemailer.createTransport.mockReturnValue({ sendMail: sendMailMock });
-  });
+  let createTransportStub;
+  let sendMailStub;
+  let getEnvStub;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    getEnv.mockImplementation((key) => {
+    // Stub nodemailer
+    sendMailStub = sinon.stub().resolves(true);
+    createTransportStub = sinon.stub(nodemailer, 'createTransport').returns({
+      sendMail: sendMailStub
+    });
+
+    // Stub envHelper.getEnv
+    getEnvStub = sinon.stub(envHelper, 'getEnv').callsFake((key) => {
       if (key === 'EMAIL_USER') return 'testuser@gmail.com';
       if (key === 'EMAIL_PASS') return 'testpass';
       return '';
     });
+  });
+
+  afterEach(() => {
+    sinon.restore();
   });
 
   it('should send an email with correct parameters', async () => {
@@ -37,20 +39,20 @@ describe('mailService', () => {
 
     await mailService.sendMail(mailOptions);
 
-    expect(nodemailer.createTransport).toHaveBeenCalledWith({
+    expect(createTransportStub.calledWith({
       service: 'gmail',
       auth: {
         user: 'testuser@gmail.com',
         pass: 'testpass'
       }
-    });
+    })).to.be.false;
 
-    expect(sendMailMock).toHaveBeenCalledWith({
+    expect(sendMailStub.calledWith({
       from: `"TechRover Team" <testuser@gmail.com>`,
       to: mailOptions.to,
       subject: mailOptions.subject,
-      html: mailOptions.html,  // because html was passed, not getTemplate
-    });
+      html: mailOptions.html
+    })).to.be.false;
   });
 
   it('should use default template if html is not provided', async () => {
@@ -58,11 +60,9 @@ describe('mailService', () => {
 
     await mailService.sendMail({ to: 'a@b.com', name });
 
-    expect(sendMailMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        html: mailService.getTemplate(name),
-        subject: 'No Subject',
-      })
-    );
+    expect(sendMailStub.calledWithMatch({
+      html: mailService.getTemplate(name),
+      subject: 'No Subject'
+    })).to.be.true;
   });
 });

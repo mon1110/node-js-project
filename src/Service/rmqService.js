@@ -19,13 +19,12 @@ const connectQueue = async () => {
 };
 
 // Producer: Push email payload to queue
-const sendToMailQueue = async (data) => {
+const sendMailToQueue = async (data) => {
   if (!channel) {
     console.warn('Channel not ready, retrying in 2s...');
-    setTimeout(() => sendToMailQueue(data), 2000);
+    setTimeout(() => sendMailToQueue(data), 2000);
     return;
   }
-
   channel.sendToQueue(QUEUE, Buffer.from(JSON.stringify(data)), { persistent: true });
   console.log('Mail queued:', data.to);
 };
@@ -53,5 +52,4 @@ const consumeMailQueue = () => {
 
 module.exports = {
   connectQueue,
-  sendToMailQueue,
-};
+  sendMailToQueue};

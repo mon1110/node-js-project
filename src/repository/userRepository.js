@@ -1,7 +1,7 @@
 // repositories/userRepository.js
 const { Op, literal } = require('sequelize');
 const User = require('../models/User');
-const { menu } = require('../models/menu');
+const  menu  = require('../models/menu');
 const Sequelize = require('sequelize');
 const bcrypt = require("bcrypt");
 // const sequelize = db.sequelize;
@@ -20,11 +20,12 @@ const findAll = async () => {
       {
         model: User,
         as: 'subUsers',
-        attributes: ['id', 'name', 'email', 'gender'], 
+        attributes: ['id', 'name', 'email', 'gender'],
       },
     ],
   });
 };
+
 
 
 const getSubUsersByToken = async () => {
@@ -71,18 +72,39 @@ const updateByEmail = async (email, data) => {
 //update password
 const updatePassword = async (id, rawPassword) => {
   const hashedPassword = await bcrypt.hash(rawPassword, 10);
-  return await User.update({ password: hashedPassword }, { where: { id } });
+  await User.update({ password: hashedPassword }, { where: { id } });
+  return hashedPassword; 
 };
 
 //node mailer ke liye
-const findByEmail = async (email) => {
-  if (!email || typeof email !== "string") return null;
+// const findByEmail = async (email) => {
+//   if (!email || typeof email !== "string") return null;
 
-  return await User.findOne({
-    where: { email: email.toLowerCase(),
-      softDelete: false }
-  });
+//   return await User.findOne({
+//     where: { email: email.toLowerCase(),
+//       softDelete: false }
+//   });
+// };
+const findByEmail = async (email) => {
+  console.log(`[findByEmail] Called with email: ${email}`);
+
+  if (!email) {
+    console.log('[findByEmail] No email provided, returning null');
+    return null;
+  }
+
+  try {
+    const user = await User.findOne({
+      where: { email: email.toLowerCase(), softDelete: false }
+    });
+    console.log('[findByEmail] User found:', user);
+    return user;
+  } catch (err) {
+    console.error('[findByEmail] Error during User.findOne:', err);
+    throw err;
+  }
 };
+
 
 //login ke liye
 const findUserByEmail = async (email) => {

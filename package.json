@@ -4,18 +4,9 @@
   "description": "Simple API ",
   "main": "index.js",
   "scripts": {
-  
-    "test:jest": "jest 'src/tests/jest/**/*.test.js'",
-    "test:jest:coverage": "jest --coverage 'src/tests/jest/**/*.test.js'",
-  
-  
-    "test:mocha": "mocha 'src/tests/mocha/**/*.test.js'",
-    "test:mocha:coverage": "nyc mocha 'src/tests/mocha/**/*.test.js'",
-  
-    "test:all": "npm run test:jest && npm run test:mocha"
+    "test": "mocha --require test/setup.js \"src/tests/**/*.test.js\"",
+    "coverage": "nyc mocha src/tests/**/*.test.js"
   },
-  
-  
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -24,7 +15,6 @@
     "axios-retry": "^4.5.0",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",
-    "chai": "^4.5.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "ejs": "^3.1.10",
@@ -54,10 +44,13 @@
   },
   "keywords": [],
   "devDependencies": {
+    "chai": "^5.2.1",
+    "chai-as-promised": "^8.0.1",
     "jest": "^30.0.5",
     "jest-mock-extended": "^4.0.0",
     "mocha": "^11.7.1",
     "nyc": "^17.1.0",
+    "proxyquire": "^2.1.3",
     "sinon": "^21.0.0",
     "supertest": "^7.1.4"
   }
