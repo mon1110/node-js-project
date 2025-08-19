@@ -24,18 +24,14 @@ try {
   Token = null;
 }
 
-/**
- * Helper responses:
- * - Use Res.success(res, data, message)
- * - Use Res.error(res, message, status)
- */
+
 
 /* ---------------- createUser ---------------- */
 const createUser = async (req, res, next) => {
   try {
     const userByIdToken = req.user?.userId || req.user?.id || null;
     if (!req.body || typeof req.body !== 'object') {
-      return Res.error(res, MessageConstant.USER.INVALID_PAYLOAD || 'Invalid payload', 400);
+      return Res.error(res, MessageConstant.USER.INVALID_PAYLOAD);
     }
 
     const user = await userService.createUser(req.body, userByIdToken);
@@ -55,8 +51,6 @@ const getAllUserss = async (req, res, next) => {
     const users = await userService.getAllUsersWithSubUsers();
     return Res.success(res, users, MessageConstant.USER.FETCH_SUCCESS);
   } catch (err) {
-    // keep logging for debugging but forward error
-    // eslint-disable-next-line no-console
     console.error('getAllUserss error:', err?.message || err);
     next(err);
   }
@@ -68,7 +62,6 @@ const getAllUsers = async (req, res, next) => {
     const users = await userService.getAllUsers();
     return Res.success(res, users, MessageConstant.USER.FETCH_SUCCESS);
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error('getAllUsers error:', error?.message || error);
     next(error);
   }
@@ -102,7 +95,7 @@ const updatePasswordController = async (req, res, next) => {
   try {
     const { userId, newPassword } = req.body || {};
     if (!userId || !newPassword) {
-      return Res.error(res, MessageConstant.USER.PASSWORD_REQUIRED || 'userId and newPassword required', 400);
+      return Res.error(res, MessageConstant.USER.PASSWORD_REQUIRED);
     }
     await userService.updatePassword(userId, newPassword);
     return res.status(200).json({ message: 'Password updated successfully' });
@@ -118,21 +111,21 @@ const updateUser = async (req, res, next) => {
     const { oldPassword, newPassword } = req.body || {};
 
     if (!userIdFromToken) {
-      return Res.error(res, MessageConstant.USER.UNAUTHORISED || 'User not authorized', 401);
+      return Res.error(res, MessageConstant.USER.UNAUTHORISED);
     }
 
     if (!oldPassword || !newPassword) {
-      return Res.error(res, MessageConstant.USER.PASSWORD_REQUIRED || 'Old and new password required', 400);
+      return Res.error(res, MessageConstant.USER.PASSWORD_REQUIRED);
     }
 
     const user = await userService.getUserById(userIdFromToken);
     if (!user) {
-      return Res.error(res, MessageConstant.USER.NOT_FOUND || 'User not found', 404);
+      return Res.error(res, MessageConstant.USER.NOT_FOUND);
     }
 
     const isMatch = await bcrypt.compare(oldPassword, user.password);
     if (!isMatch) {
-      return Res.error(res, MessageConstant.USER.INVALID_OLD_PASSWORD || 'Invalid old password', 400);
+      return Res.error(res, MessageConstant.USER.INVALID_OLD_PASSWORD);
     }
 
     await userService.updateUser(userIdFromToken, { password: newPassword });
@@ -147,7 +140,7 @@ const updateUser = async (req, res, next) => {
 const findByEmail = async (req, res, next) => {
   try {
     if (!req.body || Object.keys(req.body).length === 0) {
-      return Res.error(res, MessageConstant.USER.INVALID_PAYLOAD || 'Invalid payload', 400);
+      return Res.error(res, MessageConstant.USER.INVALID_PAYLOAD);
     }
     const data = await userService.findByEmail(req.body);
     return Res.success(res, data, MessageConstant.USER.EMAIL_FOUND);
@@ -173,7 +166,7 @@ const deleteUser = async (req, res, next) => {
 const getUsersByEmailLetter = async (req, res, next) => {
   try {
     if (!req.body) {
-      return Res.error(res, MessageConstant.USER.INVALID_PAYLOAD || 'Invalid payload', 400);
+      return Res.error(res, MessageConstant.USER.INVALID_PAYLOAD);
     }
     const users = await userService.getUsersByEmailStart(req.body);
     return Res.success(res, users, MessageConstant.USER.EMAIL_START_SUCCESS);
@@ -201,7 +194,7 @@ const assignMenusToUser = async (req, res, next) => {
   try {
     const { userId, menuIds } = req.body || {};
     if (!userId || !Array.isArray(menuIds)) {
-      return Res.error(res, MessageConstant.USER.INVALID_PAYLOAD || 'userId and menuIds array required', 400);
+      return Res.error(res, MessageConstant.USER.INVALID_PAYLOAD);
     }
 
     await userService.assignMenusToUser(userId, menuIds);
@@ -211,15 +204,15 @@ const assignMenusToUser = async (req, res, next) => {
   }
 };
 
-const paginateUsersWithMenus = async (req, res, next) => {
-  try {
-    const payload = req.body || {};
-    const result = await userService.paginateUsersWithMenus(payload);
-    return Res.success(res, result, MessageConstant.USER.PAGINATION_SUCCESS);
-  } catch (error) {
-    next(error);
-  }
-};
+// const paginateUsersWithMenus = async (req, res, next) => {
+//   try {
+//     const payload = req.body || {};
+//     const result = await userService.paginateUsersWithMenus(payload);
+//     return Res.success(res, result, MessageConstant.USER.PAGINATION_SUCCESS);
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 const getUsersWithmenu = async (req, res, next) => {
   try {
@@ -324,12 +317,12 @@ const processExternalApi = async (req, res, next) => {
     const { method, url, data } = req.body || {};
 
     if (!method || !url) {
-      return Res.error(res, MessageConstant.USER.METHOD_AND_URL_REQUIRED || 'method and url required', 400);
+      return Res.error(res, MessageConstant.USER.METHOD_AND_URL_REQUIRED);
     }
 
     const allowedMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
     if (typeof method === 'string' && !allowedMethods.includes(method.toUpperCase())) {
-      return Res.error(res, MessageConstant.USER.INVALID_METHOD || 'Invalid HTTP method', 405);
+      return Res.error(res, MessageConstant.USER.INVALID_METHOD);
     }
 
     const result = await handleRequest(method, url, data);
@@ -337,7 +330,7 @@ const processExternalApi = async (req, res, next) => {
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('processExternalApi Final Error:', error?.message || error);
-    return Res.error(res, MessageConstant.USER.EXTERNAL_API_ERROR || 'External API error', 500);
+    return Res.error(res, MessageConstant.USER.EXTERNAL_API_ERROR);
   }
 };
 
@@ -396,7 +389,7 @@ module.exports = {
   getUsersByIds,
   getAllUsers,
   assignMenusToUser,
-  paginateUsersWithMenus,
+  // paginateUsersWithMenus,
   getUsersWithmenu,
   getUsers,
   upsertUser,

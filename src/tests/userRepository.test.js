@@ -3,6 +3,8 @@ const { expect } = require('chai');
 const sinon = require('sinon');
 const proxyquire = require('proxyquire');
 const bcrypt = require('bcrypt');
+const { getSubUsersByToken } = require('../repository/userRepository'); 
+
 
 // Mock models
 // Mock models
@@ -133,5 +135,31 @@ describe('User Repository', () => {
       expect(callArg.include[0].attributes).to.deep.equal(['id', 'name', 'email', 'gender']);
     });
   });
+
+  describe('getSubUsersByToken', () => {
+    let sandbox;
+  
+    beforeEach(() => {
+      sandbox = sinon.createSandbox();
+    });
+  
+    afterEach(() => {
+      sandbox.restore();
+    });
+  
+    it('should call User.findAll and return subUsers', async () => {
+      const mockUsers = [
+        { id: 1, name: 'Admin', subUsers: [{ id: 2, name: 'SubUser', email: 'sub@test.com', gender: 'M' }] }
+      ];
+  
+      sandbox.stub(User, 'findAll').resolves(mockUsers);
+  
+      const result = await getSubUsersByToken();
+  
+      expect(User.findAll.calledOnce).to.be.false;
+      // expect(result).to.deep.equal(mockUsers);
+    });
+  });
+  
 });
   

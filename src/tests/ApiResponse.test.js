@@ -40,6 +40,9 @@
 const { expect } = require('chai');
 const ApiResponse = require('../utils/ApiResponse'); // adjust path if needed
 
+
+    // "test": "mocha --require test/setup.js \"src/tests/**/*.test.js\"",
+    
 describe('ApiResponse', () => {
   describe('success', () => {
     it('should return success with default message', () => {

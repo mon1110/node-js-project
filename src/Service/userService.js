@@ -18,6 +18,7 @@ const jwtUtil = require('../utils/jwt');
 const db = require('../models');
 const { sendToMailQueue } = require('../Service/rmqService');
 const rmqService = require('../Service/rmqService'); // <-- import this
+const User = require('../models/User'); // correct path to your Sequelize model
 
 
 const createUser = async (data,userByIdToken) => {
@@ -289,6 +290,31 @@ const sendMail = async (mailData) => {
   }
 };
 
+const paginateUsersWithMenus = async (page, limit) => {
+  // yahan DB call ya dummy return karo
+  return { users: [], total: 0, page, limit };
+};
+
+const assignTokenToAnotherUser = async (targetUserId, token) => {
+  if (!targetUserId) throw new Error('Target user id required');
+  if (!token) throw new Error('Token required');
+
+  const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test-secret');
+  const userIdFromToken = decoded?.id || decoded?.userId;
+  if (!userIdFromToken) throw new Error('Invalid token: no user id found');
+
+  const [updatedCount] = await User.update(
+    { userByIdToken: userIdFromToken },
+    { where: { id: targetUserId } }
+  );
+
+  if (!updatedCount || updatedCount === 0) {
+    throw new Error('Target user not found or update failed');
+  }
+
+  return { message: 'Token assigned successfully' };
+};
+
 
 module.exports = {
   createUser,
@@ -313,5 +339,6 @@ module.exports = {
   findByEmail,
   sendWelcomeMailsToAllUsers,
   createCustomIndexService,
-  sendMail
-};
+  sendMail,
+  paginateUsersWithMenus,
+  assignTokenToAnotherUser};

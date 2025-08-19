@@ -4,7 +4,7 @@
   "description": "Simple API ",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --require test/setup.js \"src/tests/**/*.test.js\"",
+    "test": "mocha \"src/tests/**/*.test.js\"",
     "coverage": "nyc mocha src/tests/**/*.test.js"
   },
   "author": "",
@@ -46,6 +46,7 @@
   "devDependencies": {
     "chai": "^5.2.1",
     "chai-as-promised": "^8.0.1",
+    "chai-http": "^5.1.2",
     "jest": "^30.0.5",
     "jest-mock-extended": "^4.0.0",
     "mocha": "^11.7.1",
