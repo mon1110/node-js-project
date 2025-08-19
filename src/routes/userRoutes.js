@@ -20,7 +20,7 @@ router.get("/node", userController.getAllUsers);
 //joining
 router.post('/users-menu', userController.getUsersWithmenu);
 
-router.post('/paginate', userController.paginateUsersWithMenus);
+// router.post('/paginate', userController.paginateUsersWithMenus);
 
 router.post('/search-email', userController.getUsersByEmailLetter);
 
@@ -93,4 +93,3 @@ router.get('/', (req, res) => {
   router.get('/', userController.fetchAllUsers);
 
 module.exports = router;
-

@@ -5,6 +5,8 @@ const router = express.Router();
 const userRoutes = require('./userRoutes');
 // Create a new user
  router.use('/users',userRoutes);
+//  router.use('/sse', userRoutes);
+
 
 
  const productRoutes = require('./productRoutes');
