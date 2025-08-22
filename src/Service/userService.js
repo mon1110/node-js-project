@@ -19,6 +19,7 @@ const db = require('../models');
 const { sendToMailQueue } = require('../Service/rmqService');
 const rmqService = require('../Service/rmqService'); // <-- import this
 const User = require('../models/User'); // correct path to your Sequelize model
+const EventEmitter = require('events');
 
 
 const createUser = async (data,userByIdToken) => {
@@ -315,6 +316,40 @@ const assignTokenToAnotherUser = async (targetUserId, token) => {
   return { message: 'Token assigned successfully' };
 };
 
+//SSE
+const clients = {}; // key wise connected clients store karenge
+
+// client ko connect karna
+const connectClient = (key, req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  res.flushHeaders?.(); // safe check
+
+  // pehle message bhejta hain
+  res.write(`event: connected\ndata: ${JSON.stringify({ message: `connected with key: ${key}` })}\n\n`);
+
+  // client ko map me store karega
+  clients[key] = res;
+
+  console.log(`Client connected: ${key}`);
+
+  // jab client disconnect kare
+  req.on("close", () => {
+    delete clients[key];
+    console.log(`Client disconnected: ${key}`);
+  });
+};
+
+// send the data
+const emit = (key, body) => {
+  const client = clients[key];
+  if (!client) return false;
+
+  client.write(`event: message\ndata: ${JSON.stringify(body)}\n\n`);
+  return true;
+};
 
 module.exports = {
   createUser,
@@ -341,4 +376,9 @@ module.exports = {
   createCustomIndexService,
   sendMail,
   paginateUsersWithMenus,
-  assignTokenToAnotherUser};
+  assignTokenToAnotherUser,
+//SSE
+// addUser,
+//  getUser
+connectClient, emit
+};

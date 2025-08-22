@@ -14,6 +14,7 @@ const { createCustomIndexOnEmail } = require('../Service/userService');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const { connectClient, emit } = require("../Service/userService");
 
 // Token model may not exist in some test setups — make it optional so tests won't throw on require
 let Token = null;
@@ -379,6 +380,34 @@ const assignTokenToAnotherUser = async (targetUserId, token) => {
   }
 };
 
+
+// Connect SSE
+const connect = (req, res) => {
+  const key = req.query.key;
+  if (!key) {
+    return Res.error(res, "Key is required");
+  }
+  connectClient(key, req, res);
+};
+
+// data bhejna
+const sendData = (req, res) => {
+  const { key, ...body } = req.body;
+
+  if (!key) {
+    return Res.error(res, "Key is required");
+  }
+
+  const success = emit(key, body);
+
+  if (success) {
+    return Res.success(res, body, MessageConstant.USER.EVENT_SEND_SUCESSFULLY);
+  } else {
+    return Res.error(res, MessageConstant.USER.KEY_NOT_CONNECTED);
+  }
+};
+
+
 module.exports = {
   createUser,
   getAllUserss,
@@ -403,4 +432,7 @@ module.exports = {
   processExternalApi,
   createCustomIndex,
   assignTokenToAnotherUser,
+  //SSE
+  connect, 
+  sendData 
 };

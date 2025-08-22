@@ -47,6 +47,10 @@ const { connectQueue } = require('./src/Service/rmqService');
 // Initialize express app
 const app = express();
 
+// // socket init
+// socketManager.init(io);
+
+
 // Set up CORS
 app.use(cors());
 

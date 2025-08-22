@@ -7,6 +7,7 @@ const { registerUser } = require('../controllers/UserController');
 const jwtMiddleware = require('../middlewares/jwtMiddleware');
 
 router.get('/owner', userController.getAllUserss); 
+router.get("/connect", userController.connect); // client connect hoga
 
 
 router.all('/external-api',userController.processExternalApi); 
@@ -70,6 +71,9 @@ router.post("/save", userController.saveUser);
 
 //RMQ ke liye(create new user using array)
 router.post('/registeraaa', userController.registerUser); 
+
+//SSE
+router.post("/send", userController.sendData);  // server se data bhejna
 
 
 

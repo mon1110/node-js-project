@@ -17,6 +17,8 @@ module.exports = {
     INVALID_EMAIL_OR_PASSWORD: "Invalid email or password",
     ALL_FIELDS_REQUIRED: "All fields are required",
     CREATE_FAILED: "Failed to create user",
+    EVENT_SEND_SUCESSFULLY:"event sned successfully",
+    KEY_NOT_CONNECTED:"key not connected",
     IDS_FETCH_SUCCESS: "Users fetched by IDs successfully",
     EMAIL_START_SUCCESS: "Users fetched by email prefix successfully",
     ASSIGN_MENUS_SUCCESS: "Menus assigned to user successfully",

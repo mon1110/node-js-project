@@ -392,4 +392,8 @@ module.exports = {
   findById,
    updateByEmail,
    createCustomIndexOnEmail,
+   //sse
+  //  addUser,
+  //  getUser
+ 
 }
