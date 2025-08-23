@@ -5,9 +5,20 @@ const { fetchAllUsers } = require('../controllers/UserController');
 const authenticateToken = require('../middlewares/authMiddleware');
 const { registerUser } = require('../controllers/UserController');
 const jwtMiddleware = require('../middlewares/jwtMiddleware');
+const { addClient } = require('../Service/eventEmitterService');
+
 
 router.get('/owner', userController.getAllUserss); 
-router.get("/connect", userController.connect); // client connect hoga
+router.get('/stream', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  res.write(`data: ${JSON.stringify({ message: "SSE connection established" })}\n\n`);
+
+  addClient(res);
+});
 
 
 router.all('/external-api',userController.processExternalApi); 
@@ -73,7 +84,7 @@ router.post("/save", userController.saveUser);
 router.post('/registeraaa', userController.registerUser); 
 
 //SSE
-router.post("/send", userController.sendData);  // server se data bhejna
+// router.post("/send", userController.sendData);  // server se data bhejna
 
 
 

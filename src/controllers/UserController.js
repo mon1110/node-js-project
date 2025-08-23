@@ -10,11 +10,12 @@ const ApiResponse = require('../utils/ApiResponse');
 const axios = require('axios');
 // const { handleRequest } = require('../Service/jsonapi');
 const jsonapi = require('../Service/jsonapi');
-const { createCustomIndexOnEmail } = require('../Service/userService');
+// const { createCustomIndexOnEmail } = require('../Service/userService');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const { connectClient, emit } = require("../Service/userService");
+const { emitter } = require('../Service/eventEmitterService');
+const { broadcast } = require('../Service/eventEmitterService'); // <-- yeh top pe import karo
 
 // Token model may not exist in some test setups — make it optional so tests won't throw on require
 let Token = null;
@@ -40,12 +41,17 @@ const createUser = async (req, res, next) => {
     // Ensure we don't leak password
     const { password, ...userWithoutPassword } = user || {};
 
+    // Yahan SSE clients ko notify karo
+    broadcast({
+      event: 'userCreated',
+      data: userWithoutPassword
+    });
+
     return Res.success(res, { user: userWithoutPassword }, MessageConstant.USER.CREATE_SUCCESS);
   } catch (error) {
     next(error);
   }
 };
-
 /* ---------------- getAllUserss (with sub users) ---------------- */
 const getAllUserss = async (req, res, next) => {
   try {
@@ -382,31 +388,40 @@ const assignTokenToAnotherUser = async (targetUserId, token) => {
 
 
 // Connect SSE
-const connect = (req, res) => {
-  const key = req.query.key;
-  if (!key) {
-    return Res.error(res, "Key is required");
-  }
-  connectClient(key, req, res);
+
+const connectSSE = (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  // Immediately ek hello/ping bhej do (connection alive test ke liye)
+  res.write("event: connected\n");
+  res.write(`data: ${JSON.stringify({ message: "SSE connection established" })}\n\n`);
+
+  const sendEvent = (event, data) => {
+    res.write(`event: ${event}\n`);
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  // Listen for db-update events
+  const listener = (payload) => {
+    sendEvent("db-update", payload);
+  };
+
+  emitter.on("db-update", listener);
+
+  // Connection ko zinda rakhne ke liye har 15s me ek ping bhejo
+  const intervalId = setInterval(() => {
+    res.write(`event: ping\n`);
+    res.write(`data: ${JSON.stringify({ time: new Date().toISOString() })}\n\n`);
+  }, 15000);
+
+  req.on("close", () => {
+    clearInterval(intervalId);
+    emitter.removeListener("db-update", listener);
+    res.end();
+  });
 };
-
-// data bhejna
-const sendData = (req, res) => {
-  const { key, ...body } = req.body;
-
-  if (!key) {
-    return Res.error(res, "Key is required");
-  }
-
-  const success = emit(key, body);
-
-  if (success) {
-    return Res.success(res, body, MessageConstant.USER.EVENT_SEND_SUCESSFULLY);
-  } else {
-    return Res.error(res, MessageConstant.USER.KEY_NOT_CONNECTED);
-  }
-};
-
 
 module.exports = {
   createUser,
@@ -433,6 +448,5 @@ module.exports = {
   createCustomIndex,
   assignTokenToAnotherUser,
   //SSE
-  connect, 
-  sendData 
+  connectSSE   
 };

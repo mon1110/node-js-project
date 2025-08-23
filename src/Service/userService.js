@@ -20,6 +20,8 @@ const { sendToMailQueue } = require('../Service/rmqService');
 const rmqService = require('../Service/rmqService'); // <-- import this
 const User = require('../models/User'); // correct path to your Sequelize model
 const EventEmitter = require('events');
+// const logger = require('../config/logger'); // apka logger hai
+const { eventEmitterService } = require('./eventEmitterService'); // ✅ correct import
 
 
 const createUser = async (data,userByIdToken) => {
@@ -50,6 +52,11 @@ const createUser = async (data,userByIdToken) => {
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
   );
+
+  eventEmitterService.emitEvent("db-update", {
+    type: "USER_CREATED",
+    data: newUser
+  });
 
   return { user: newUser, token };
 };
@@ -316,40 +323,44 @@ const assignTokenToAnotherUser = async (targetUserId, token) => {
   return { message: 'Token assigned successfully' };
 };
 
+const addUser = async (userData) => {
+  const user = await userRepo.createUser(userData);
+
+  // Emit event after DB insert
+  eventEmitter.emitEvent('db-update', { message: "New User Added", data: user });
+
+  return user;
+};
+
 //SSE
-const clients = {}; // key wise connected clients store karenge
 
-// client ko connect karna
-const connectClient = (key, req, res) => {
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
+// class EventEmitterService extends EventEmitter {
+//   constructor() {
+//       super();
+//   }
 
-  res.flushHeaders?.(); // safe check
+//   emitEvent(eventName, eventData) {
+//       try {
+//           super.emit(eventName, eventData);
+//       } catch (error) {
+//           console.error("Emit Error: ", error);
+//           super.off(eventName, () => {});
+//       }
+//   }
 
-  // pehle message bhejta hain
-  res.write(`event: connected\ndata: ${JSON.stringify({ message: `connected with key: ${key}` })}\n\n`);
+//   onEvent(eventName, listener) {
+//       try {
+//           super.on(eventName, listener);
+//       } catch (error) {
+//           console.error("On Error: ", error);
+//           super.off(eventName, () => {});
+//       }
+//   }
+// }
 
-  // client ko map me store karega
-  clients[key] = res;
 
-  console.log(`Client connected: ${key}`);
 
-  // jab client disconnect kare
-  req.on("close", () => {
-    delete clients[key];
-    console.log(`Client disconnected: ${key}`);
-  });
-};
-
-// send the data
-const emit = (key, body) => {
-  const client = clients[key];
-  if (!client) return false;
-
-  client.write(`event: message\ndata: ${JSON.stringify(body)}\n\n`);
-  return true;
-};
+// const eventEmitterService = new EventEmitterService();
 
 module.exports = {
   createUser,
@@ -378,7 +389,5 @@ module.exports = {
   paginateUsersWithMenus,
   assignTokenToAnotherUser,
 //SSE
-// addUser,
-//  getUser
-connectClient, emit
-};
+// eventEmitterService,
+addUser};
