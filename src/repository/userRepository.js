@@ -278,10 +278,19 @@ const getUsers = async ({ filter = {}, sort = {}, page = {} }) => {
 
 //upsert
 const upsertUser = async (data) => {
+  const t = await sequelize.transaction();
   try {
-    const [user, created] = await User.upsert(data, { returning: true });
+    const [user, created] = await User.upsert(data, {
+      returning: true,
+      transaction: t,
+      lock: t.LOCK.UPDATE   // <-- row lock
+    });
+
+    await t.commit();
     return { user, created };
+
   } catch (error) {
+    await t.rollback();
     if (error.name === 'SequelizeUniqueConstraintError') {
       throw new Error('Partial match found (only email or name exists), upsert skipped');
     }
@@ -301,20 +310,20 @@ const findExistingUsers = async (emails) => {
 
 const bulkSaveUsers = async (users) => {
   const t = await sequelize.transaction();
-
   try {
     const savedUsers = await User.bulkCreate(users, {
       returning: true,
       transaction: t,
-      updateOnDuplicate: ['name', 'gender', 'menuIds'],
-      validate: true 
+      updateOnDuplicate: ["name", "gender", "menuIds"],
+      validate: true,
+      lock: t.LOCK.UPDATE  // <-- row-level lock
     });
 
-    await t.commit(); // Commit if successful
+    await t.commit();
     return savedUsers;
 
   } catch (error) {
-    await t.rollback(); // Rollback if error
+    await t.rollback();
     throw error;
   }
 };

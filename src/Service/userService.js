@@ -17,11 +17,11 @@ const { Settings } = require('../models/Settings');
 const jwtUtil = require('../utils/jwt');
 const db = require('../models');
 const { sendToMailQueue } = require('../Service/rmqService');
-const rmqService = require('../Service/rmqService'); // <-- import this
-const User = require('../models/User'); // correct path to your Sequelize model
+const rmqService = require('../Service/rmqService'); 
+const User = require('../models/User'); 
 const EventEmitter = require('events');
 // const logger = require('../config/logger'); // apka logger hai
-const { eventEmitterService } = require('./eventEmitterService'); // ✅ correct import
+const { eventEmitterService } = require('./eventEmitterService'); 
 
 
 const createUser = async (data,userByIdToken) => {
@@ -233,14 +233,15 @@ const getUsers = async ({ filter, sort, page }) => {
 };
 
 
-//upsert
-const upsertUser = async (data) => {
-  return await userRepo.upsertUser(data);
-};
 
 //joining
 const getUsersWithmenu = async () => {
   return await userRepo.getUsersWithmenu();
+};
+
+//upsert
+const upsertUser = async (data) => {
+  return await userRepo.upsertUser(data);
 };
 
 //bulk

@@ -36,5 +36,4 @@ function broadcast({ event, data }) {
 
 const eventEmitterService = new EventEmitterService();
 
-// ✅ sabko ek sath export karo
 module.exports = { eventEmitterService, addClient, broadcast };
