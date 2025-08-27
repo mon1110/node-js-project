@@ -8,6 +8,7 @@ module.exports = {
     FETCH_SUCCESS: "User(s) fetched successfully",
     PASSWORD_REQUIRED:"password is required",
     UNAUTHORISED:"unauthorized",
+    INDEX_CREATED:"index created",
     INVALID_PAYLOAD:"invalid payload",
     ID_REQUIRED:"id is required",
     FETCH_FAILED: "Failed to fetch users",

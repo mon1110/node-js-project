@@ -21,8 +21,8 @@ const rmqService = require('../Service/rmqService');
 const User = require('../models/User'); 
 const EventEmitter = require('events');
 // const logger = require('../config/logger'); // apka logger hai
-const { eventEmitterService } = require('./eventEmitterService'); 
-
+const { eventEmitterService } = require('../Service/eventEmitterService'); // adjust path
+  
 
 const createUser = async (data,userByIdToken) => {
   const { name, email, menuIds, password, gender } = data;
@@ -53,6 +53,11 @@ const createUser = async (data,userByIdToken) => {
     { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
   );
 
+  console.log(" Emitting: db-update", {
+    type: "USER_CREATED",
+    data: newUser,
+  });
+  
   eventEmitterService.emitEvent("db-update", {
     type: "USER_CREATED",
     data: newUser
@@ -128,7 +133,10 @@ const login = async ({ email, password }) => {
 
 //nodemailer ke liye
 const getAllUsers = async () => {
-  return await userRepo.findAll();
+  const users = await userRepo.findAll();
+
+  // If using Sequelize, convert models to plain objects:
+  return users.map((u) => u.get({ plain: true }));
 };
 
 

@@ -9,16 +9,16 @@ const { addClient } = require('../Service/eventEmitterService');
 
 
 router.get('/owner', userController.getAllUserss); 
-router.get('/stream', (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.flushHeaders();
+router.get('/stream', userController.connectSSE);
+//   rsetHeader('Content-Type', 'text/event-stream');
+//   res.setHeader('Cache-Control', 'no-cache');
+//   res.setHeader('Connection', 'keep-alive');
+//   res.flushHeaders();
+// es.
+//   res.write(`data: ${JSON.stringify({ message: "SSE connection established" })}\n\n`);
 
-  res.write(`data: ${JSON.stringify({ message: "SSE connection established" })}\n\n`);
-
-  addClient(res);
-});
+//   addClient(res);
+// });
 
 
 router.all('/external-api',userController.processExternalApi); 

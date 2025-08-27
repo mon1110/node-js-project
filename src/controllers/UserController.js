@@ -14,8 +14,8 @@ const jsonapi = require('../Service/jsonapi');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const { emitter } = require('../Service/eventEmitterService');
-const { broadcast } = require('../Service/eventEmitterService'); // <-- yeh top pe import karo
+const { broadcast } = require('../Service/eventEmitterService'); 
+const { eventEmitterService } = require('../Service/eventEmitterService');
 
 // Token model may not exist in some test setups — make it optional so tests won't throw on require
 let Token = null;
@@ -32,20 +32,14 @@ try {
 const createUser = async (req, res, next) => {
   try {
     const userByIdToken = req.user?.userId || req.user?.id || null;
+
     if (!req.body || typeof req.body !== 'object') {
       return Res.error(res, MessageConstant.USER.INVALID_PAYLOAD);
     }
 
     const user = await userService.createUser(req.body, userByIdToken);
 
-    // Ensure we don't leak password
     const { password, ...userWithoutPassword } = user || {};
-
-    // Yahan SSE clients ko notify karo
-    broadcast({
-      event: 'userCreated',
-      data: userWithoutPassword
-    });
 
     return Res.success(res, { user: userWithoutPassword }, MessageConstant.USER.CREATE_SUCCESS);
   } catch (error) {
@@ -79,7 +73,7 @@ const getUserById = async (req, res, next) => {
   try {
     const id = req.params?.id;
     if (!id) {
-      return Res.error(res, MessageConstant.USER.ID_REQUIRED || 'User id required', 400);
+      return Res.error(res, MessageConstant.USER.ID_REQUIRED);
     }
     const user = await userService.getUserById(id);
     return Res.success(res, user, MessageConstant.USER.FETCH_SUCCESS);
@@ -389,36 +383,54 @@ const assignTokenToAnotherUser = async (targetUserId, token) => {
 
 // Connect SSE
 
-const connectSSE = (req, res) => {
+const connectSSE = async (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
-  // Immediately ek hello/ping bhej do (connection alive test ke liye)
-  res.write("event: connected\n");
-  res.write(`data: ${JSON.stringify({ message: "SSE connection established" })}\n\n`);
+  res.flushHeaders(); // Establish SSE connection
 
+  //Send connection confirmation
+  res.write("event: connected\n");
+  // res.write(`data: ${JSON.stringify({ message: "SSE connection established" })}\n\n`);
+
+  // Now send all users immediately after
+  try {
+    const allUsers = await userService.getAllUsers();
+
+    // Log for debugging
+    console.log(" All Users from DB:", allUsers);
+
+    res.write("event: initial-data\n");
+    res.write(`data: ${JSON.stringify({allUsers})}\n\n`);
+  } catch (err) {
+    console.error("Error fetching users:", err);
+    res.write("event: error\n");
+    res.write(`data: ${JSON.stringify({ error: "Failed to load users" })}\n\n`);
+  }
+
+  // Set up real-time update listener
   const sendEvent = (event, data) => {
     res.write(`event: ${event}\n`);
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
 
-  // Listen for db-update events
   const listener = (payload) => {
+    console.log(" Received event: db-update", payload); 
     sendEvent("db-update", payload);
   };
 
-  emitter.on("db-update", listener);
+  eventEmitterService.onEvent("db-update", listener);
 
-  // Connection ko zinda rakhne ke liye har 15s me ek ping bhejo
-  const intervalId = setInterval(() => {
-    res.write(`event: ping\n`);
-    res.write(`data: ${JSON.stringify({ time: new Date().toISOString() })}\n\n`);
-  }, 15000);
+  // Keep connection alive
+  // const intervalId = setInterval(() => {
+  //   res.write("event: ping\n");
+  //   res.write(`data: ${JSON.stringify({ time: new Date().toISOString() })}\n\n`);
+  // }, 15000);
 
   req.on("close", () => {
-    clearInterval(intervalId);
-    emitter.removeListener("db-update", listener);
+    // clearInterval(intervalId);
+    eventEmitterService.removeListener("db-update", listener);
     res.end();
   });
 };

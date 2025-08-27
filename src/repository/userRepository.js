@@ -283,7 +283,7 @@ const upsertUser = async (data) => {
     const [user, created] = await User.upsert(data, {
       returning: true,
       transaction: t,
-      lock: t.LOCK.UPDATE   // <-- row lock
+      lock: t.LOCK.UPDATE   
     });
 
     await t.commit();

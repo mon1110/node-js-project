@@ -2,6 +2,7 @@ const EventEmitter = require("events");
 
 class EventEmitterService extends EventEmitter {
   emitEvent(eventName, eventData) {
+    console.log(" EMIT CALLED:", eventName, eventData);
     try {
       super.emit(eventName, eventData);
     } catch (error) {
@@ -10,6 +11,7 @@ class EventEmitterService extends EventEmitter {
   }
 
   onEvent(eventName, listener) {
+    console.log("LISTENER REGISTERED:", eventName);
     try {
       super.on(eventName, listener);
     } catch (error) {
